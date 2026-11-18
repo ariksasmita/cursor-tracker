@@ -45,7 +45,7 @@ Token resolution order:
  "effectiveLimitCents":10000}
 ```
 
-`GetCurrentPeriodUsage` exposes `planUsage.{totalSpend,includedSpend,bonusSpend,limit,autoSpend,apiSpend}` (cents — field names from app bundle; live spike in Task 3 confirms exact JSON casing).
+`GetCurrentPeriodUsage` returns only billing-cycle bounds; period spend is derived by summing the daily-spend rows and reading `effectiveLimitCents`.
 
 ## Non-goals
 

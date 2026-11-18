@@ -31,15 +31,6 @@ bar, and legend. Other tabs still show their lists, so you can switch tabs with
 Layout and palette follow an exported UI design (dark canvas, amber accent, tall
 block numerals).
 
- Models — period $21.30 · 281.22M tokens
-
- CATEGORY                               TOKENS      SPEND  14-DAY
- model-alpha                      6.98M      $4.75  ▁▃▁█▂▁▁▁▁▁▁▁▁▁
- model-epsilon                        6.13M      $4.57  ▁▁▁▁▁█▁▁▁▁▁▁▁▁
- model-delta          225.73M      $4.46  ▂▁█▃▂▁▁▁▁▁▁▁▁▁
- model-beta                       4.78M      $3.88  ▁▁▁▁▁▁▁▁▁▁▁▁▁▁
-```
-
 ## Install
 
 ```bash
