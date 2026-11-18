@@ -67,7 +67,7 @@ func New(deps Deps) *App {
 	if deps.Now == nil {
 		deps.Now = time.Now
 	}
-	a := &App{deps: deps}
+	a := &App{deps: deps, tab: 1} // tab 1 = Overview
 	a.Fetch = defaultFetch(deps)
 	return a
 }

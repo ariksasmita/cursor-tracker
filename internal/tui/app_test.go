@@ -356,3 +356,29 @@ func TestHeroBlockSuffixSymbol(t *testing.T) {
 		t.Errorf("percent suffix broken: %q", pct[1])
 	}
 }
+
+func TestCompactHidesOverviewBody(t *testing.T) {
+	now := time.Date(2026, 11, 18, 12, 0, 0, 0, time.Local)
+	app := newTestApp(t, goodResult(now), nil, nil, nil)
+
+	full := app.View()
+	for _, want := range []string{"DAILY SPEND", "TOP MODELS"} {
+		if !strings.Contains(full, want) {
+			t.Fatalf("full mode must show %q", want)
+		}
+	}
+
+	app.compact = true
+	compact := app.View()
+	for _, gone := range []string{"DAILY SPEND", "TOP MODELS"} {
+		if strings.Contains(compact, gone) {
+			t.Errorf("compact mode must hide %q", gone)
+		}
+	}
+	// The glanceable summary survives.
+	for _, keep := range []string{"of $", "spent ", "left ", "pace"} {
+		if !strings.Contains(compact, keep) {
+			t.Errorf("compact mode must keep %q", keep)
+		}
+	}
+}

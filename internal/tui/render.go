@@ -76,10 +76,16 @@ func render(a *App) string {
 	}
 
 	b.WriteString(rule(inner) + "\n\n")
-	if !a.compact {
+	if a.compact {
+		// Compact mode is a spend glance: the overview chart and model
+		// leaderboard are the first things to go.
+		if a.tab != 1 {
+			b.WriteString(a.body(inner))
+		}
+	} else {
 		b.WriteString(tabRow(a, inner) + "\n\n")
+		b.WriteString(a.body(inner))
 	}
-	b.WriteString(a.body(inner))
 	b.WriteString("\n")
 	b.WriteString(footer(a, inner))
 	return paintCanvas(b.String(), w)

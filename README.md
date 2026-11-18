@@ -44,8 +44,10 @@ The hero numerals are drawn with a 3-row block font (`internal/tui/components.go
 `bigFont`): digits render tall, and both `$` and `%` trail their number at normal
 scale on the middle row (`heroBlock`). Swap that one table to change the typeface.
 
-Press `c` for compact mode — it drops the metrics row and tab bar for a denser
-screen, keeping the hero, budget bar, and the active tab's body.
+Press `c` for compact mode — a spend glance. It drops the metrics row, the tab
+bar, and the overview's daily chart + top-models panels, leaving the hero, budget
+bar, and legend. Other tabs still show their lists, so you can switch tabs with
+`1`–`4` and keep working in compact mode.
 
 Layout and palette follow the design in `Cursor Usage TUI-export.html`.
 
@@ -79,7 +81,7 @@ all. On Linux/Windows, set `CURSOR_TOKEN` (or point `CURSOR_STATE_DB` at a Curso
 |---|---|
 | `1`–`4` | Overview / Models / Sessions / History |
 | `j` / `k` | Scroll the active list (Models, Sessions, History) |
-| `c` | Compact mode: hide the metrics row and tab bar |
+| `c` | Compact mode: hide metrics, tab bar, daily chart and top models |
 | `r` | Refresh now (auto-refreshes every 60s) |
 | `q`, `ctrl+c` | Quit |
 
