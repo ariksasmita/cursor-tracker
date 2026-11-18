@@ -28,7 +28,8 @@ bar, and the overview's daily chart + top-models panels, leaving the hero, budge
 bar, and legend. Other tabs still show their lists, so you can switch tabs with
 `1`–`4` and keep working in compact mode.
 
-Layout and palette follow the design in `Cursor Usage TUI-export.html`.
+Layout and palette follow an exported UI design (dark canvas, amber accent, tall
+block numerals).
 
  Models — period $21.30 · 281.22M tokens
 
