@@ -5,34 +5,12 @@ limit, burn rate and end-of-month projection, per-model token/cost breakdown, an
 OpenBot agent session activity. Built for the **OpenBot → `cursor-agent` (API key)**
 workflow, so it works without the Cursor desktop app running.
 
-```
-CURSOR SPEND▌                                          NOV 01 — DEC 01 2026
+## Preview
 
- █  ▀▀█     █▀█ █▀█                                     █  ▀▀█     █▀█
- █  ▄▄█     ▀▀█ █ █$                                    █  ▄▄█     ▀▀█%
-▄█▄ █▄▄  ▄  ▄▄█ █▄█                                   ▄█▄ █▄▄  ▄  ▄▄█
-of $100.00                                            $78.50 LEFT
-
-█████████████▓▓▓▓▓▓▓▓▓░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
-spent $21.50   projected $36.35   left $78.50     day 18 of 30 · 0.36× pace
-
-──────────────────────────────────────────────────────────────────────────
-
-BURN RATE        │ PROJECTED EOM    │ DAYS TO LIMIT    │ ELAPSED
-$1.21 /day       │ $36.35 36.4%     │ 65 at pace       │ 17.7 of 30 d
-
-──────────────────────────────────────────────────────────────────────────
-
- 1  Overview   2  Models   3  Sessions   4  History        10 models · 22 rows
-
-DAILY SPEND 18 days · avg $1.19 · peak $5.00        TOP MODELS
-                                    ██              model-alpha   $4.75
-      ██                            ██   ██         ██████████████████████
-      ██          ██          ██    ██   ██         model-delta  $4.65
-██ ▁▁ ██ ▁▁ ██ ▁▁ ▁▁ ▁▁ ██ ▁▁ ██ ▁▁ ██ ██ ▁▁ ██    █████████████████████░
-────────────────────────────────────────────────    model-epsilon     $4.57
-Nov 01                  Nov 10              Nov 18    █████████████████████░
-```
+| Mode | Screenshot |
+|---|---|
+| **Compact** (default) — hero, budget bar, pace | <img src="docs/screenshots/compact-mode.png" width="560" alt="cursor-tracker compact mode"> |
+| **Full** — `c` adds metrics, tabs, daily chart, top models | <img src="docs/screenshots/full-mode.png" width="560" alt="cursor-tracker full mode"> |
 
 The budget bar is segmented: `█` spent, `▓` projected month-end, `░` untouched.
 It turns solid red once you pass the limit, and the pace readout turns red when
