@@ -2,7 +2,7 @@ package tui
 
 import "github.com/charmbracelet/lipgloss"
 
-// Palette from the design export ("Cursor Usage TUI-export.html").
+// Palette from the exported UI design: dark canvas, amber accent, two state colours.
 var (
 	colBg        = lipgloss.Color("#0C1017")
 	colBarBg     = lipgloss.Color("#141A23")
