@@ -10,9 +10,14 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/sasmitai/cursor-tracker/internal/agg"
 	"github.com/sasmitai/cursor-tracker/internal/history"
 	"github.com/sasmitai/cursor-tracker/internal/source"
 )
+
+func aggFor(a *App) agg.Aggregate {
+	return agg.ComputeAggregate(a.deps.Now(), a.result.Period)
+}
 
 func goodResult(now time.Time) FetchResult {
 	day := time.Date(2026, 11, 17, 0, 0, 0, 0, time.Local)
@@ -269,5 +274,61 @@ func TestScrollDown(t *testing.T) {
 	app.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("k")})
 	if app.offset != 0 {
 		t.Fatalf("offset must clamp at 0, offset=%d", app.offset)
+	}
+}
+
+func TestBigDigitsRender(t *testing.T) {
+	rows := bigDigits("21.50")
+	if len(rows) != 3 {
+		t.Fatalf("hero digits must be 3 rows tall, got %d", len(rows))
+	}
+	widths := map[int]bool{}
+	for _, r := range rows {
+		if strings.TrimSpace(r) == "" {
+			t.Errorf("empty hero row: %q", rows)
+		}
+		widths[len([]rune(r))] = true
+	}
+	if len(widths) != 1 {
+		t.Errorf("hero rows must be equal width, got %v", widths)
+	}
+	if !strings.Contains(strings.Join(rows, ""), "█") {
+		t.Errorf("hero digits must use block glyphs, got %q", rows)
+	}
+}
+
+func TestHeroIsTallerThanOneLine(t *testing.T) {
+	now := time.Date(2026, 11, 18, 12, 0, 0, 0, time.Local)
+	app := newTestApp(t, goodResult(now), nil, nil, nil)
+	hero := heroRow(app, aggFor(app), 88)
+	if n := len(strings.Split(hero, "\n")); n < 3 {
+		t.Fatalf("hero must occupy >= 3 rows, got %d:\n%s", n, hero)
+	}
+}
+
+func TestCompactToggleHidesMetricsAndTabs(t *testing.T) {
+	now := time.Date(2026, 11, 18, 12, 0, 0, 0, time.Local)
+	app := newTestApp(t, goodResult(now), nil, nil, nil)
+
+	full := app.View()
+	if !strings.Contains(full, "BURN RATE") || !strings.Contains(full, "Overview") {
+		t.Fatal("full mode must show metrics and tabs")
+	}
+
+	app.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("c")})
+	compact := app.View()
+	if strings.Contains(compact, "BURN RATE") {
+		t.Error("compact mode must hide the metrics row")
+	}
+	if strings.Contains(compact, "Overview") {
+		t.Error("compact mode must hide the tab bar")
+	}
+	if !strings.Contains(compact, "spent") {
+		t.Error("compact mode must keep the budget summary")
+	}
+
+	app.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("c")})
+	if !strings.Contains(app.View(), "BURN RATE") {
+		t.Error("c must toggle back to full mode")
 	}
 }

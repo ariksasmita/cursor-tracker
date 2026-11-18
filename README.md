@@ -10,8 +10,10 @@ workflow, so it works without the Cursor desktop app running.
 
 CURSOR SPEND▌                                          NOV 01 — DEC 01 2026
 
-SPENT THIS MONTH                                              21.5%
-$21.50 of $100.00                                            $78.50 LEFT
+ █  ▀▀█     █▀█ █▀█                                     █  ▀▀█     █▀█
+$ █  ▄▄█     ▀▀█ █ █                                    █  ▄▄█     ▀▀█%
+▄█▄ █▄▄  ▄  ▄▄█ █▄█                                   ▄█▄ █▄▄  ▄  ▄▄█
+of $100.00                                            $78.50 LEFT
 
 █████████████▓▓▓▓▓▓▓▓▓░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
 spent $21.50   projected $36.35   left $78.50     day 18 of 30 · 0.36× pace
@@ -37,6 +39,13 @@ Nov 01                  Nov 10              Nov 18    ████████�
 The budget bar is segmented: `█` spent, `▓` projected month-end, `░` untouched.
 It turns solid red once you pass the limit, and the pace readout turns red when
 you are spending faster than the month is elapsing.
+
+The hero numerals are drawn with a 3-row block font (`internal/tui/components.go`,
+`bigFont`): digits render tall, while `$` and `%` stay at normal scale so the two
+blocks share a baseline. Swap that one table to change the typeface.
+
+Press `c` for compact mode — it drops the metrics row and tab bar for a denser
+screen, keeping the hero, budget bar, and the active tab's body.
 
 Layout and palette follow the design in `Cursor Usage TUI-export.html`.
 
@@ -70,6 +79,7 @@ all. On Linux/Windows, set `CURSOR_TOKEN` (or point `CURSOR_STATE_DB` at a Curso
 |---|---|
 | `1`–`4` | Overview / Models / Sessions / History |
 | `j` / `k` | Scroll the active list (Models, Sessions, History) |
+| `c` | Compact mode: hide the metrics row and tab bar |
 | `r` | Refresh now (auto-refreshes every 60s) |
 | `q`, `ctrl+c` | Quit |
 

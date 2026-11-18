@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math"
 	"strings"
+
+	"github.com/charmbracelet/lipgloss"
 )
 
 // fmtMoney renders US cents as $X.XX.
@@ -238,4 +240,79 @@ func humanAge(d float64) string { // d in seconds
 	default:
 		return fmt.Sprintf("%.1fd", d/86400)
 	}
+}
+
+// bigFont is a 3-wide x 6-tall pixel font drawn as three text rows using
+// half blocks. Swapping fonts later only touches this table.
+var bigFont = map[rune][6][3]int{
+	'0': {{1, 1, 1}, {1, 0, 1}, {1, 0, 1}, {1, 0, 1}, {1, 0, 1}, {1, 1, 1}},
+	'1': {{0, 1, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}, {1, 1, 1}},
+	'2': {{1, 1, 1}, {0, 0, 1}, {0, 0, 1}, {1, 1, 1}, {1, 0, 0}, {1, 1, 1}},
+	'3': {{1, 1, 1}, {0, 0, 1}, {0, 1, 1}, {0, 0, 1}, {0, 0, 1}, {1, 1, 1}},
+	'4': {{1, 0, 1}, {1, 0, 1}, {1, 1, 1}, {0, 0, 1}, {0, 0, 1}, {0, 0, 1}},
+	'5': {{1, 1, 1}, {1, 0, 0}, {1, 1, 1}, {0, 0, 1}, {0, 0, 1}, {1, 1, 1}},
+	'6': {{1, 1, 1}, {1, 0, 0}, {1, 1, 1}, {1, 0, 1}, {1, 0, 1}, {1, 1, 1}},
+	'7': {{1, 1, 1}, {0, 0, 1}, {0, 0, 1}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}},
+	'8': {{1, 1, 1}, {1, 0, 1}, {1, 1, 1}, {1, 0, 1}, {1, 0, 1}, {1, 1, 1}},
+	'9': {{1, 1, 1}, {1, 0, 1}, {1, 1, 1}, {0, 0, 1}, {0, 0, 1}, {1, 1, 1}},
+	'.': {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 1, 0}},
+}
+
+// bigDigits renders s as three text rows of tall block numerals. Characters
+// with no glyph (currency signs, percent) are skipped — callers place them
+// at normal scale so baselines stay clean.
+func bigDigits(s string) []string {
+	rows := make([]strings.Builder, 3)
+	for _, ch := range s {
+		g, ok := bigFont[ch]
+		if !ok {
+			continue
+		}
+		for pair := 0; pair < 3; pair++ {
+			for c := 0; c < 3; c++ {
+				top, bot := g[pair*2][c], g[pair*2+1][c]
+				switch {
+				case top == 1 && bot == 1:
+					rows[pair].WriteRune('█')
+				case top == 1:
+					rows[pair].WriteRune('▀')
+				case bot == 1:
+					rows[pair].WriteRune('▄')
+				default:
+					rows[pair].WriteRune(' ')
+				}
+			}
+			rows[pair].WriteString(" ")
+		}
+	}
+	out := make([]string, 3)
+	for i := range rows {
+		out[i] = strings.TrimRight(rows[i].String(), " ")
+	}
+	return out
+}
+
+// padRows makes every row of a glyph block the same width so blocks stack
+// into a clean rectangle.
+func padRows(rows []string) []string {
+	w := 0
+	for _, r := range rows {
+		if l := len([]rune(r)); l > w {
+			w = l
+		}
+	}
+	out := make([]string, len(rows))
+	for i, r := range rows {
+		out[i] = r + strings.Repeat(" ", w-len([]rune(r)))
+	}
+	return out
+}
+
+// stampColour paints every row of a glyph block with one colour.
+func stampColour(rows []string, style lipgloss.Style) []string {
+	out := make([]string, len(rows))
+	for i, r := range rows {
+		out[i] = style.Render(r)
+	}
+	return out
 }

@@ -57,6 +57,9 @@ type App struct {
 
 	// offset is the list scroll offset for the active tab.
 	offset int
+
+	// compact hides the metrics row and tab bar for a denser screen.
+	compact bool
 }
 
 // New builds the App.
@@ -107,6 +110,8 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "r":
 			a.offset = 0
 			return a, a.doFetch()
+		case "c":
+			a.compact = !a.compact
 		case "j", "down":
 			a.offset++
 		case "k", "up":

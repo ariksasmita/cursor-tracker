@@ -69,12 +69,16 @@ func render(a *App) string {
 		b.WriteString(heroRow(a, ag, inner) + "\n\n")
 		b.WriteString(budgetBar(a, ag, inner) + "\n\n")
 		b.WriteString(legendRow(a, ag, inner) + "\n\n")
-		b.WriteString(rule(inner) + "\n\n")
-		b.WriteString(metricsRow(a, ag, inner) + "\n\n")
+		if !a.compact {
+			b.WriteString(rule(inner) + "\n\n")
+			b.WriteString(metricsRow(a, ag, inner) + "\n\n")
+		}
 	}
 
 	b.WriteString(rule(inner) + "\n\n")
-	b.WriteString(tabRow(a, inner) + "\n\n")
+	if !a.compact {
+		b.WriteString(tabRow(a, inner) + "\n\n")
+	}
 	b.WriteString(a.body(inner))
 	b.WriteString("\n")
 	b.WriteString(footer(a, inner))
@@ -119,23 +123,37 @@ func monthRangeLabel(p *source.PeriodUsage) string {
 
 func heroRow(a *App, ag agg.Aggregate, inner int) string {
 	p := a.result.Period
-	label := stLabel.Render("SPENT THIS MONTH")
-	amount := stAmount.Render(fmtMoney(float64(p.TotalSpendCents)))
-	budget := stMuted.Render("of " + fmtMoney(float64(p.LimitCents)))
-	left := label + "\n" + amount + " " + budget
+
+	// Amount block: tall numerals with "$" at normal scale on the middle row.
+	amountRows := stampColour(padRows(bigDigits(fmt.Sprintf("%.2f", float64(p.TotalSpendCents)/100))), stAmount)
+	mid := len(amountRows) / 2
+	if mid < len(amountRows) {
+		amountRows[mid] = stAmount.Render("$") + amountRows[mid]
+	}
+	left := strings.Join(append(amountRows,
+		stMuted.Render("of "+fmtMoney(float64(p.LimitCents)))), "\n")
 
 	if !ag.HasLimit {
 		return left
 	}
-	pctStyle := stAccentBold
+
+	pctDigits := padRows(bigDigits(fmt.Sprintf("%.1f", ag.SpendFraction*100)))
+	pctRows := stampColour(pctDigits, stAccentBold)
 	if ag.SpendFraction >= 1 {
-		pctStyle = stBad
+		pctRows = stampColour(pctDigits, stBad)
+	}
+	mid = len(pctRows) / 2
+	if mid < len(pctRows) {
+		pctRows[mid] = pctRows[mid] + stAccentBold.Render("%")
+		if ag.SpendFraction >= 1 {
+			pctRows[mid] = strings.TrimSuffix(pctRows[mid], stAccentBold.Render("%")) + stBad.Render("%")
+		}
 	}
 	leftLabel := stLabel.Render(fmtMoney(float64(ag.RemainingCents)) + " LEFT")
 	if ag.RemainingCents < 0 {
 		leftLabel = stWarn.Render("OVER BUDGET " + fmtMoney(float64(-ag.RemainingCents)))
 	}
-	right := pctStyle.Render(fmtPct(ag.SpendFraction)) + "\n" + leftLabel
+	right := strings.Join(append(pctRows, leftLabel), "\n")
 
 	gap := inner - maxLineWidth(left) - maxLineWidth(right)
 	if gap < 1 {
@@ -363,6 +381,7 @@ func footer(a *App, inner int) string {
 	left := stMuted.Render(fmt.Sprintf("data: %s old via %s", age, src))
 	keys := stTabKey.Render(" r ") + stMuted.Render("refresh") + "   " +
 		stTabKey.Render(" 1-4 ") + stMuted.Render("tabs") + "   " +
+		stTabKey.Render(" c ") + stMuted.Render("compact") + "   " +
 		stTabKey.Render(" q ") + stMuted.Render("quit")
 	gap := inner - lipglossWidth(left) - lipglossWidth(keys)
 	if gap < 1 {
