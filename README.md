@@ -6,13 +6,39 @@ OpenBot agent session activity. Built for the **OpenBot → `cursor-agent` (API 
 workflow, so it works without the Cursor desktop app running.
 
 ```
- Cursor Spend ── Nov 1–Dec 1 2026
+ ● ● ●            cursor-tracker — ~/cursor-tracker — zsh            v1.0.0
 
- $21.30 / $100.00 ██████░░░░░░░░░░░░░░░░░░░░░░░░░░  21.3%
- Burn rate: $1.20/day · Projected EOM: $36.05 · Days to limit: 65
+CURSOR SPEND▌                                          NOV 01 — DEC 01 2026
 
- [1] Overview  [2] Models  [3] Sessions  [4] History
+SPENT THIS MONTH                                              21.5%
+$21.50 of $100.00                                            $78.50 LEFT
+
+█████████████▓▓▓▓▓▓▓▓▓░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+spent $21.50   projected $36.35   left $78.50     day 18 of 30 · 0.36× pace
+
+──────────────────────────────────────────────────────────────────────────
+
+BURN RATE        │ PROJECTED EOM    │ DAYS TO LIMIT    │ ELAPSED
+$1.21 /day       │ $36.35 36.4%     │ 65 at pace       │ 17.7 of 30 d
+
+──────────────────────────────────────────────────────────────────────────
+
+ 1  Overview   2  Models   3  Sessions   4  History        10 models · 22 rows
+
+DAILY SPEND 18 days · avg $1.19 · peak $5.00        TOP MODELS
+                                    ██              model-alpha   $4.75
+      ██                            ██   ██         ██████████████████████
+      ██          ██          ██    ██   ██         model-delta  $4.65
+██ ▁▁ ██ ▁▁ ██ ▁▁ ▁▁ ▁▁ ██ ▁▁ ██ ▁▁ ██ ██ ▁▁ ██    █████████████████████░
+────────────────────────────────────────────────    model-epsilon     $4.57
+Nov 01                  Nov 10              Nov 18    █████████████████████░
 ```
+
+The budget bar is segmented: `█` spent, `▓` projected month-end, `░` untouched.
+It turns solid red once you pass the limit, and the pace readout turns red when
+you are spending faster than the month is elapsing.
+
+Layout and palette follow the design in `Cursor Usage TUI-export.html`.
 
  Models — period $21.30 · 281.22M tokens
 
@@ -43,6 +69,7 @@ all. On Linux/Windows, set `CURSOR_TOKEN` (or point `CURSOR_STATE_DB` at a Curso
 | Key | Action |
 |---|---|
 | `1`–`4` | Overview / Models / Sessions / History |
+| `j` / `k` | Scroll the active list (Models, Sessions, History) |
 | `r` | Refresh now (auto-refreshes every 60s) |
 | `q`, `ctrl+c` | Quit |
 

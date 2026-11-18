@@ -3,6 +3,7 @@ package tui
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -171,5 +172,102 @@ func TestTickTriggersRefetch(t *testing.T) {
 	}
 	if calls == 0 {
 		t.Fatal("auto-refresh tick must trigger a refetch")
+	}
+}
+
+func TestMetricsRowMetricsOnOneLine(t *testing.T) {
+	now := time.Date(2026, 11, 18, 12, 0, 0, 0, time.Local)
+	res := goodResult(now)
+	res.Period.PeriodStartMs = time.Date(2026, 11, 1, 0, 0, 0, 0, time.Local).UnixMilli()
+	res.Period.PeriodEndMs = time.Date(2026, 12, 1, 0, 0, 0, 0, time.Local).UnixMilli()
+	app := newTestApp(t, res, nil, nil, nil)
+	view := app.View()
+
+	var labelLine string
+	for _, line := range strings.Split(view, "\n") {
+		if strings.Contains(line, "BURN RATE") {
+			labelLine = line
+		}
+	}
+	if labelLine == "" {
+		t.Fatal("BURN RATE label missing")
+	}
+	for _, want := range []string{"PROJECTED EOM", "DAYS TO LIMIT", "ELAPSED"} {
+		if !strings.Contains(labelLine, want) {
+			t.Errorf("metrics must share one row; %q missing from %q", want, labelLine)
+		}
+	}
+}
+
+func TestDailyChartZeroFillsWholeMonth(t *testing.T) {
+	now := time.Date(2026, 11, 18, 12, 0, 0, 0, time.Local)
+	res := goodResult(now)
+	res.Period.PeriodStartMs = time.Date(2026, 11, 1, 0, 0, 0, 0, time.Local).UnixMilli()
+	res.Period.PeriodEndMs = time.Date(2026, 12, 1, 0, 0, 0, 0, time.Local).UnixMilli()
+	res.Daily = []source.DailySpend{
+		{Day: time.Date(2026, 11, 16, 0, 0, 0, 0, time.Local), Category: "m1", SpendCents: 500},
+		{Day: time.Date(2026, 11, 17, 0, 0, 0, 0, time.Local), Category: "m1", SpendCents: 600},
+	}
+	app := newTestApp(t, res, nil, nil, nil)
+	days, _ := app.dailyTotals()
+	if len(days) != 18 {
+		t.Fatalf("chart must span day 1..18, got %d columns", len(days))
+	}
+	if days[0] != 0 || days[14] != 0 {
+		t.Errorf("days without spend must be zero-filled, got %v", days)
+	}
+	if days[15] != 500 || days[16] != 600 {
+		t.Errorf("known days wrong: %v", days)
+	}
+}
+
+func TestOverBudgetLabel(t *testing.T) {
+	now := time.Date(2026, 11, 18, 12, 0, 0, 0, time.Local)
+	res := goodResult(now)
+	res.Period.TotalSpendCents = 15000 // over the $100 limit
+	app := newTestApp(t, res, nil, nil, nil)
+	view := app.View()
+	if !strings.Contains(view, "OVER BUDGET") {
+		t.Errorf("over-budget state must be labelled, got: %q", firstLine(view, 8))
+	}
+}
+
+func TestSliceRows(t *testing.T) {
+	rows := make([]string, 100)
+	for i := range rows {
+		rows[i] = fmt.Sprintf("row-%d", i)
+	}
+	got, more := sliceRows(rows, 0, 10)
+	if len(got) != 10 || got[0] != "row-0" {
+		t.Fatalf("first page wrong: %d %q", len(got), got[0])
+	}
+	if more != 90 {
+		t.Errorf("more=%d want 90", more)
+	}
+	got, more = sliceRows(rows, 95, 10)
+	if len(got) != 5 || got[0] != "row-95" || more != 0 {
+		t.Fatalf("clamped page wrong: %d %q more=%d", len(got), got[0], more)
+	}
+	if got, _ := sliceRows(rows, 500, 10); len(got) != 0 {
+		t.Errorf("offset past end must yield nothing, got %d", len(got))
+	}
+}
+
+func TestScrollDown(t *testing.T) {
+	app := newTestApp(t, goodResult(time.Date(2026, 11, 18, 12, 0, 0, 0, time.Local)), nil, nil, nil)
+	if app.offset != 0 {
+		t.Fatalf("initial offset %d", app.offset)
+	}
+	app.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("j")})
+	if app.offset != 1 {
+		t.Fatalf("j must scroll down, offset=%d", app.offset)
+	}
+	app.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("k")})
+	if app.offset != 0 {
+		t.Fatalf("k must scroll up, offset=%d", app.offset)
+	}
+	app.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("k")})
+	if app.offset != 0 {
+		t.Fatalf("offset must clamp at 0, offset=%d", app.offset)
 	}
 }

@@ -74,3 +74,45 @@ func TestComputeAggregate_ZeroBurn(t *testing.T) {
 		t.Errorf("zero burn with limit: limit yes, projection/daysToLimit no: %+v", a)
 	}
 }
+
+func TestComputeAggregate_DesignMetrics(t *testing.T) {
+	now := time.Date(2026, 11, 18, 12, 0, 0, 0, time.Local)
+	p := basePeriod(now) // 30-day period, 10 days in, $30 of $100
+	a := ComputeAggregate(now, &p)
+
+	if a.DaysInPeriod != 30 {
+		t.Errorf("DaysInPeriod=%d want 30", a.DaysInPeriod)
+	}
+	if a.DayOfPeriod != 11 {
+		t.Errorf("DayOfPeriod=%d want 11", a.DayOfPeriod)
+	}
+	if math.Abs(a.ElapsedFraction-(10.0/30.0)) > 0.005 {
+		t.Errorf("ElapsedFraction=%v want ~0.333", a.ElapsedFraction)
+	}
+	if math.Abs(a.SpendFraction-0.30) > 0.0001 {
+		t.Errorf("SpendFraction=%v want 0.30", a.SpendFraction)
+	}
+	// pace = spend share / elapsed share = 0.30 / 0.333 = 0.90
+	if math.Abs(a.PaceRatio-0.90) > 0.01 {
+		t.Errorf("PaceRatio=%v want ~0.90", a.PaceRatio)
+	}
+	if a.RemainingCents != 7000 {
+		t.Errorf("RemainingCents=%d want 7000", a.RemainingCents)
+	}
+	if math.Abs(a.ProjectedFraction-0.90) > 0.01 {
+		t.Errorf("ProjectedFraction=%v want ~0.90", a.ProjectedFraction)
+	}
+}
+
+func TestComputeAggregate_OverBudget(t *testing.T) {
+	now := time.Date(2026, 11, 18, 12, 0, 0, 0, time.Local)
+	p := basePeriod(now)
+	p.TotalSpendCents = 15000 // $150 of $100
+	a := ComputeAggregate(now, &p)
+	if a.RemainingCents != -5000 {
+		t.Errorf("RemainingCents=%d want -5000", a.RemainingCents)
+	}
+	if a.PaceRatio <= 1 {
+		t.Errorf("PaceRatio=%v want >1 when over pace", a.PaceRatio)
+	}
+}

@@ -1,7 +1,9 @@
-// Package agg derives burn-rate and projection metrics from a PeriodUsage.
+// Package agg derives burn-rate, pace, and projection metrics from a
+// PeriodUsage.
 package agg
 
 import (
+	"math"
 	"time"
 
 	"github.com/sasmitai/cursor-tracker/internal/source"
@@ -15,6 +17,15 @@ type Aggregate struct {
 	DaysElapsed, DaysRemaining float64
 	DaysToLimit                float64 // 0 when not computable
 	HasLimit, HasProjection    bool
+
+	// Presentation metrics.
+	DaysInPeriod      int     // whole days in the period, at least 1
+	DayOfPeriod       int     // 1-based day of the period containing now
+	ElapsedFraction   float64 // 0..1+: fraction of the period elapsed
+	SpendFraction     float64 // spend / limit, 0 when no limit
+	ProjectedFraction float64 // projection / limit, 0 when not computable
+	PaceRatio         float64 // spend share / elapsed share; 1.0 = exactly on pace
+	RemainingCents    int64   // limit - spend; negative when over budget
 }
 
 // ComputeAggregate derives metrics for the period containing now.
@@ -37,6 +48,27 @@ func ComputeAggregate(now time.Time, p *source.PeriodUsage) Aggregate {
 		a.DaysRemaining = 0
 	}
 
+	a.DaysInPeriod = int(math.Round((end - start) / dayMs))
+	if a.DaysInPeriod < 1 {
+		a.DaysInPeriod = 1
+	}
+	a.DayOfPeriod = int(math.Floor(a.DaysElapsed)) + 1
+	if a.DayOfPeriod < 1 {
+		a.DayOfPeriod = 1
+	}
+	if a.DayOfPeriod > a.DaysInPeriod {
+		a.DayOfPeriod = a.DaysInPeriod
+	}
+	a.ElapsedFraction = a.DaysElapsed / float64(a.DaysInPeriod)
+
+	if a.HasLimit {
+		a.SpendFraction = float64(p.TotalSpendCents) / float64(p.LimitCents)
+		a.RemainingCents = p.LimitCents - p.TotalSpendCents
+		if a.ElapsedFraction > 0 {
+			a.PaceRatio = a.SpendFraction / a.ElapsedFraction
+		}
+	}
+
 	if a.DaysElapsed > 1 {
 		a.BurnRateCentsPerDay = float64(p.TotalSpendCents) / a.DaysElapsed
 		if a.BurnRateCentsPerDay > 0 {
@@ -47,6 +79,7 @@ func ComputeAggregate(now time.Time, p *source.PeriodUsage) Aggregate {
 				if a.DaysToLimit < 0 {
 					a.DaysToLimit = 0
 				}
+				a.ProjectedFraction = a.ProjectedEomSpendCents / float64(p.LimitCents)
 			}
 		}
 	}

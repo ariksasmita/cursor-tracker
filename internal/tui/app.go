@@ -51,6 +51,12 @@ type App struct {
 
 	// Fetch pulls data; a field so tests inject results without IO.
 	Fetch func(ctx context.Context) (FetchResult, error)
+
+	// width/height come from tea.WindowSizeMsg.
+	width, height int
+
+	// offset is the list scroll offset for the active tab.
+	offset int
 }
 
 // New builds the App.
@@ -92,12 +98,21 @@ type fetchErrMsg struct{ err error }
 // Update implements tea.Model.
 func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch m := msg.(type) {
+	case tea.WindowSizeMsg:
+		a.width = m.Width
 	case tea.KeyMsg:
 		switch m.String() {
 		case "q", "ctrl+c":
 			return a, tea.Quit
 		case "r":
+			a.offset = 0
 			return a, a.doFetch()
+		case "j", "down":
+			a.offset++
+		case "k", "up":
+			if a.offset > 0 {
+				a.offset--
+			}
 		case "1", "2", "3", "4":
 			a.switchTab(int(m.String()[0] - '0'))
 		}
@@ -134,7 +149,20 @@ func (a *App) SetWarnings(warnings []string) {
 func (a *App) switchTab(n int) {
 	if n >= 1 && n <= 4 {
 		a.tab = n
+		a.offset = 0
 	}
+}
+
+// listHeight is how many list rows fit given the chrome above and below.
+func (a *App) listHeight() int {
+	if a.height <= 0 {
+		return 12
+	}
+	h := a.height - 20
+	if h < 4 {
+		h = 4
+	}
+	return h
 }
 
 // View implements tea.Model.

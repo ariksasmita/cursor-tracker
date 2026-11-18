@@ -1,0 +1,241 @@
+package tui
+
+import (
+	"fmt"
+	"math"
+	"strings"
+)
+
+// fmtMoney renders US cents as $X.XX.
+func fmtMoney(cents float64) string {
+	return fmt.Sprintf("$%.2f", cents/100)
+}
+
+// fmtMoneyCompact is fmtMoney for large values: $1.2K, $1.4M.
+func fmtMoneyCompact(cents float64) string {
+	d := cents / 100
+	switch {
+	case math.Abs(d) >= 1_000_000:
+		return fmt.Sprintf("$%.1fM", d/1e6)
+	case math.Abs(d) >= 10_000:
+		return fmt.Sprintf("$%.1fK", d/1e3)
+	default:
+		return fmt.Sprintf("$%.2f", d)
+	}
+}
+
+// fmtPct renders a fraction as a percentage with one decimal.
+func fmtPct(fraction float64) string {
+	return fmt.Sprintf("%.1f%%", fraction*100)
+}
+
+// humanTokens renders a token count compactly.
+func humanTokens(n int64) string {
+	switch {
+	case n >= 1_000_000_000:
+		return fmt.Sprintf("%.2fB", float64(n)/1e9)
+	case n >= 1_000_000:
+		return fmt.Sprintf("%.2fM", float64(n)/1e6)
+	case n >= 1_000:
+		return fmt.Sprintf("%.0fK", float64(n)/1e3)
+	default:
+		return fmt.Sprintf("%d", n)
+	}
+}
+
+// truncate shortens s to n runes with an ellipsis.
+func truncate(s string, n int) string {
+	r := []rune(s)
+	if len(r) <= n {
+		return s
+	}
+	if n <= 1 {
+		return string(r[:n])
+	}
+	return string(r[:n-1]) + "…"
+}
+
+// padVisible right-pads s with spaces to n visible runes.
+func padVisible(s string, n int) string {
+	l := len([]rune(s))
+	if l >= n {
+		return s
+	}
+	return s + strings.Repeat(" ", n-l)
+}
+
+// padLeft left-pads s with spaces to n visible runes.
+func padLeft(s string, n int) string {
+	l := len([]rune(s))
+	if l >= n {
+		return s
+	}
+	return strings.Repeat(" ", n-l) + s
+}
+
+// miniBar renders a proportional fill of the given width using block glyphs.
+// Always fills exactly width cells so columns stay aligned.
+func miniBar(fraction, width float64) string {
+	w := int(math.Round(width))
+	if w < 1 {
+		w = 1
+	}
+	f := fraction
+	if f < 0 {
+		f = 0
+	}
+	if f > 1 {
+		f = 1
+	}
+	filled := int(math.Round(f * float64(w)))
+	if filled > w {
+		filled = w
+	}
+	return stShareFill.Render(strings.Repeat("█", filled)) +
+		stShareTrack.Render(strings.Repeat("░", w-filled))
+}
+
+// segmentedBar renders the budget track as discrete cells: spent (accent),
+// projected headroom (dim accent), untouched (track). Cell count adapts to
+// the available width.
+func segmentedBar(spentFrac, projectedFrac float64, cells int) string {
+	if cells < 4 {
+		cells = 4
+	}
+	spentCells := int(math.Round(clamp01(spentFrac) * float64(cells)))
+	projCells := int(math.Round(clamp01(projectedFrac)*float64(cells))) - spentCells
+
+	var b strings.Builder
+	for i := 0; i < cells; i++ {
+		switch {
+		case i < spentCells:
+			b.WriteString(stSpentCell.Render("█"))
+		case i < spentCells+projCells:
+			b.WriteString(stProjectedCell.Render("▓"))
+		default:
+			b.WriteString(stEmptyCell.Render("░"))
+		}
+	}
+	return b.String()
+}
+
+func clamp01(f float64) float64 {
+	if f < 0 {
+		return 0
+	}
+	if f > 1 {
+		return 1
+	}
+	return f
+}
+
+// dailyBars renders a vertical bar chart of daily spend scaled to the
+// tallest day. Bars widen to two cells with a one-cell gap when the plot is
+// wide enough, which reads closer to the design's block columns.
+func dailyBars(days []float64, height, width int) []string {
+	if height < 1 {
+		height = 1
+	}
+	if len(days) == 0 {
+		return nil
+	}
+	var max float64
+	for _, d := range days {
+		if d > max {
+			max = d
+		}
+	}
+
+	barW, gap := 1, 0
+	if width >= len(days)*3 {
+		barW, gap = 2, 1
+	}
+	rows := make([]string, height)
+	for r := 0; r < height; r++ {
+		var b strings.Builder
+		for i, d := range days {
+			h := 0
+			if max > 0 {
+				h = int(math.Ceil(d / max * float64(height)))
+			}
+			filled := height-r <= h
+			// Zero-spend days keep a faint floor so the timeline stays readable.
+			glyph := strings.Repeat(" ", barW)
+			switch {
+			case filled:
+				glyph = stAccent.Render(strings.Repeat("█", barW))
+			case r == height-1 && d == 0:
+				glyph = stEmptyCell.Render(strings.Repeat("▁", barW))
+			}
+			b.WriteString(glyph)
+			if gap > 0 && i < len(days)-1 {
+				b.WriteString(strings.Repeat(" ", gap))
+			}
+		}
+		rows[r] = b.String()
+	}
+	return rows
+}
+
+// sparkline renders recent values as block glyphs, scaled to their own max.
+func sparkline(vals []float64) string {
+	blocks := []rune("▁▂▃▄▅▆▇█")
+	var max float64
+	for _, v := range vals {
+		if v > max {
+			max = v
+		}
+	}
+	var b strings.Builder
+	for _, v := range vals {
+		if max <= 0 {
+			b.WriteString(" ")
+			continue
+		}
+		idx := int(math.Round(float64(len(blocks)-1) * clamp01(v/max)))
+		if idx < 0 {
+			idx = 0
+		}
+		if idx >= len(blocks) {
+			idx = len(blocks) - 1
+		}
+		b.WriteString(string(blocks[idx]))
+	}
+	return b.String()
+}
+
+// sliceRows returns the visible window of rows for a scroll offset and the
+// number of rows still below it.
+func sliceRows(rows []string, offset, limit int) ([]string, int) {
+	if limit < 1 {
+		limit = 1
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	if offset >= len(rows) {
+		return nil, 0
+	}
+	end := offset + limit
+	if end > len(rows) {
+		end = len(rows)
+	}
+	return rows[offset:end], len(rows) - end
+}
+
+// humanAge renders an elapsed duration compactly.
+func humanAge(d float64) string { // d in seconds
+	if d < 0 {
+		d = 0
+	}
+	switch {
+	case d < 60:
+		return fmt.Sprintf("%.0fs", d)
+	case d < 3600:
+		return fmt.Sprintf("%.0fm", d/60)
+	case d < 86400:
+		return fmt.Sprintf("%.1fh", d/3600)
+	default:
+		return fmt.Sprintf("%.1fd", d/86400)
+	}
+}
