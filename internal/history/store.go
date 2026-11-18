@@ -4,6 +4,7 @@ package history
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -66,9 +67,20 @@ CREATE TABLE IF NOT EXISTS daily_spend (
 // Close releases the DB handle.
 func (s *Store) Close() error { return s.db.Close() }
 
-// UpsertPeriod stores a period snapshot keyed by FetchedAt.
+// UpsertPeriod stores a period snapshot keyed by FetchedAt. A poll whose
+// spend and limit match the period's most recent snapshot is skipped, so one
+// row is kept per observed spend level rather than one per refresh.
 func (s *Store) UpsertPeriod(p source.PeriodUsage) error {
-	_, err := s.db.Exec(`INSERT OR REPLACE INTO period_snapshots
+	var lastSpend, lastLimit int64
+	err := s.db.QueryRow(`SELECT total_spend_cents, limit_cents FROM period_snapshots
+WHERE period_start_ms = ? ORDER BY fetched_at DESC LIMIT 1`, p.PeriodStartMs).Scan(&lastSpend, &lastLimit)
+	if err == nil && lastSpend == p.TotalSpendCents && lastLimit == p.LimitCents {
+		return nil
+	}
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
+	_, err = s.db.Exec(`INSERT OR REPLACE INTO period_snapshots
 (fetched_at, period_start_ms, period_end_ms, total_spend_cents, limit_cents, included_spend_cents, api_spend_cents, auto_spend_cents)
 VALUES (?,?,?,?,?,?,?,?)`,
 		p.FetchedAt.UnixMilli(), p.PeriodStartMs, p.PeriodEndMs, p.TotalSpendCents,

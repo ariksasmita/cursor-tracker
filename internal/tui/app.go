@@ -65,9 +65,14 @@ func New(deps Deps) *App {
 
 type tickMsg time.Time
 
+// tick schedules the next auto-refresh; a package var so tests can stub it.
+var tick = func(d time.Duration) tea.Cmd {
+	return tea.Tick(d, func(t time.Time) tea.Msg { return tickMsg(t) })
+}
+
 // Init implements tea.Model.
 func (a *App) Init() tea.Cmd {
-	return tea.Batch(a.doFetch(), tea.Tick(time.Minute, func(t time.Time) tea.Msg { return tickMsg(t) }))
+	return tea.Batch(a.doFetch(), tick(time.Minute))
 }
 
 func (a *App) doFetch() tea.Cmd {
@@ -97,7 +102,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			a.switchTab(int(m.String()[0] - '0'))
 		}
 	case tickMsg:
-		return a, tea.Tick(time.Minute, func(t time.Time) tea.Msg { return tickMsg(t) })
+		return a, tea.Batch(a.doFetch(), tick(time.Minute))
 	case FetchResult:
 		a.loadResult(m)
 	case fetchErrMsg:

@@ -146,7 +146,7 @@ func (a *LiveAPI) FetchDailySpend(ctx context.Context, periodStartMs, periodEndM
 		}
 		utc := time.UnixMilli(ms).UTC()
 		rows = append(rows, DailySpend{
-			Day: time.Date(utc.Year(), utc.Month(), utc.Day(), 0, 0, 0, 0, time.Local),
+			Day:         time.Date(utc.Year(), utc.Month(), utc.Day(), 0, 0, 0, 0, time.Local),
 			Category:    r.Category,
 			SpendCents:  r.SpendCents,
 			TotalTokens: tokens,

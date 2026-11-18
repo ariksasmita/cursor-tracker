@@ -90,3 +90,25 @@ func TestLocalSnapshot_KeyAbsent(t *testing.T) {
 		t.Fatalf("want snapshot-not-found error, got %v", err)
 	}
 }
+
+func TestLocalSnapshot_BoundsFromNewestChart(t *testing.T) {
+	// Top-level bounds disagree with the newest chart; the chart wins because
+	// daily rows are keyed by the chart's own bounds.
+	doc := `{"periodStartMs":1,"periodEndMs":2,"fetchedAt":1794560969745,"charts":[
+	 {"periodStartMs":1793577600000,"periodEndMs":1796083200000,"response":"{\"dailySpend\":[{\"day\":\"1793664000000\",\"category\":\"m\",\"spendCents\":100,\"totalTokens\":\"10\"}],\"effectiveLimitCents\":10000}"}]}`
+	ls, err := NewLocalSnapshot(makeSnapshotDB(t, doc, true))
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, err := ls.FetchPeriodUsage(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p.PeriodStartMs != 1793577600000 || p.PeriodEndMs != 1796083200000 {
+		t.Fatalf("bounds must come from newest chart, got %d..%d", p.PeriodStartMs, p.PeriodEndMs)
+	}
+	rows, err := ls.FetchDailySpend(context.Background(), p.PeriodStartMs, p.PeriodEndMs)
+	if err != nil || len(rows) != 1 {
+		t.Fatalf("daily rows must resolve for reported bounds: %d rows, err %v", len(rows), err)
+	}
+}

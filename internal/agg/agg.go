@@ -10,11 +10,11 @@ import (
 // Aggregate holds derived period metrics. Zero values plus Has* flags
 // express "not computable" (see each field).
 type Aggregate struct {
-	BurnRateCentsPerDay     float64
-	ProjectedEomSpendCents  float64 // 0 + HasProjection=false when not computable
+	BurnRateCentsPerDay        float64
+	ProjectedEomSpendCents     float64 // 0 + HasProjection=false when not computable
 	DaysElapsed, DaysRemaining float64
-	DaysToLimit             float64 // 0 when not computable
-	HasLimit, HasProjection bool
+	DaysToLimit                float64 // 0 when not computable
+	HasLimit, HasProjection    bool
 }
 
 // ComputeAggregate derives metrics for the period containing now.

@@ -107,12 +107,25 @@ func (s *LocalSnapshot) chartFor(startMs, endMs int64) (*chartResponse, error) {
 }
 
 // FetchPeriodUsage implements UsageSource from the newest cached period.
+// Bounds come from the newest chart rather than the document's top-level
+// fields: the daily rows live under the chart's own bounds, so reporting the
+// same bounds keeps FetchDailySpend resolvable.
 func (s *LocalSnapshot) FetchPeriodUsage(ctx context.Context) (*PeriodUsage, error) {
 	doc, err := s.load()
 	if err != nil {
 		return nil, err
 	}
-	chart, err := s.chartFor(0, 0)
+	start, end := doc.PeriodStartMs, doc.PeriodEndMs
+	if len(doc.Charts) > 0 {
+		newest := doc.Charts[0]
+		for _, c := range doc.Charts[1:] {
+			if c.PeriodStartMs > newest.PeriodStartMs {
+				newest = c
+			}
+		}
+		start, end = newest.PeriodStartMs, newest.PeriodEndMs
+	}
+	chart, err := s.chartFor(start, end)
 	if err != nil {
 		return nil, err
 	}
@@ -121,8 +134,8 @@ func (s *LocalSnapshot) FetchPeriodUsage(ctx context.Context) (*PeriodUsage, err
 		total += r.SpendCents
 	}
 	return &PeriodUsage{
-		PeriodStartMs:   doc.PeriodStartMs,
-		PeriodEndMs:     doc.PeriodEndMs,
+		PeriodStartMs:   start,
+		PeriodEndMs:     end,
 		TotalSpendCents: total,
 		LimitCents:      chart.EffectiveLimitCents,
 		FetchedAt:       time.UnixMilli(doc.FetchedAt),

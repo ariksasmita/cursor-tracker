@@ -40,7 +40,7 @@ func stubPost(bodyByURL map[string][]byte, statusByURL map[string]int) (reset fu
 func TestFetchPeriodUsage(t *testing.T) {
 	daily := loadFixture(t, "daily.json")
 	reset, _ := stubPost(map[string][]byte{
-		"https://api2.cursor.sh/aiserver.v1.DashboardService/GetCurrentPeriodUsage":    loadFixture(t, "period.json"),
+		"https://api2.cursor.sh/aiserver.v1.DashboardService/GetCurrentPeriodUsage":   loadFixture(t, "period.json"),
 		"https://api2.cursor.sh/aiserver.v1.DashboardService/GetDailySpendByCategory": daily,
 	}, nil)
 	defer reset()

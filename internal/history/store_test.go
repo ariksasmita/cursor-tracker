@@ -10,14 +10,14 @@ import (
 
 func samplePeriod(fetched time.Time) source.PeriodUsage {
 	return source.PeriodUsage{
-		PeriodStartMs:     1793577600000,
-		PeriodEndMs:       1796083200000,
-		TotalSpendCents:   1290,
-		LimitCents:        10000,
+		PeriodStartMs:      1793577600000,
+		PeriodEndMs:        1796083200000,
+		TotalSpendCents:    1290,
+		LimitCents:         10000,
 		IncludedSpendCents: 2000,
-		ApiSpendCents:     300,
-		AutoSpendCents:    990,
-		FetchedAt:         fetched,
+		ApiSpendCents:      300,
+		AutoSpendCents:     990,
+		FetchedAt:          fetched,
 	}
 }
 
@@ -89,5 +89,38 @@ func TestEmptyStore(t *testing.T) {
 	rows, err := s.DailyForPeriod(1)
 	if err != nil || len(rows) != 0 {
 		t.Fatalf("want empty no error, got %v %v", rows, err)
+	}
+}
+
+func TestUpsertPeriod_SkipsUnchangedSpend(t *testing.T) {
+	s, err := Open(filepath.Join(t.TempDir(), "history.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+
+	// Three polls a minute apart with identical spend: one stored snapshot.
+	for i := 0; i < 3; i++ {
+		p := samplePeriod(time.UnixMilli(1795000000000 + int64(i)*60000))
+		if err := s.UpsertPeriod(p); err != nil {
+			t.Fatal(err)
+		}
+	}
+	periods, err := s.Periods()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(periods) != 1 {
+		t.Fatalf("repeated polls must collapse to 1 row, got %d", len(periods))
+	}
+	// A spend change must add a row.
+	p := samplePeriod(time.UnixMilli(1795000600000))
+	p.TotalSpendCents = 1400
+	if err := s.UpsertPeriod(p); err != nil {
+		t.Fatal(err)
+	}
+	periods, _ = s.Periods()
+	if len(periods) != 2 {
+		t.Fatalf("changed spend must add a row, got %d", len(periods))
 	}
 }

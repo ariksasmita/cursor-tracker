@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	tea "github.com/charmbracelet/bubbletea"
+
 	"github.com/sasmitai/cursor-tracker/internal/history"
 	"github.com/sasmitai/cursor-tracker/internal/source"
 )
@@ -142,5 +144,32 @@ func TestInitialFrame_ShowsLoading(t *testing.T) {
 	app.warning = ""
 	if view := app.View(); !strings.Contains(view, "loading") {
 		t.Errorf("pre-fetch frame must say loading, got: %q", firstLine(view, 4))
+	}
+}
+
+func TestTickTriggersRefetch(t *testing.T) {
+	app := newTestApp(t, goodResult(time.Now()), nil, nil, nil)
+	calls := 0
+	app.Fetch = func(ctx context.Context) (FetchResult, error) {
+		calls++
+		return FetchResult{}, nil
+	}
+	oldTick := tick
+	tick = func(d time.Duration) tea.Cmd { return func() tea.Msg { return nil } }
+	defer func() { tick = oldTick }()
+	_, cmd := app.Update(tickMsg(time.Now()))
+	if cmd == nil {
+		t.Fatal("tick must return a command")
+	}
+	// Batch only returns the sub-commands; run them.
+	if batch, ok := cmd().(tea.BatchMsg); ok {
+		for _, c := range batch {
+			if c != nil {
+				_ = c()
+			}
+		}
+	}
+	if calls == 0 {
+		t.Fatal("auto-refresh tick must trigger a refetch")
 	}
 }
