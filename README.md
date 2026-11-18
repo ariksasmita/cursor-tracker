@@ -74,6 +74,19 @@ Token discovery uses the macOS keychain, so on macOS it works with no setup at
 all. On Linux/Windows, set `CURSOR_TOKEN` (or point `CURSOR_STATE_DB` at a Cursor
 `state.vscdb`).
 
+### Updating an installed copy
+
+`go install` drops the binary in `$(go env GOPATH)/bin` (`~/go/bin`), which is not
+on PATH by default. This machine installs to `~/.local/bin`, which already is:
+
+```bash
+cd ~/Documents/learn/cursor-tracker
+CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o ~/.local/bin/cursor-tracker .
+```
+
+Overwrite the same path each time; the binary is static, so no other steps are
+needed. Check where yours lives with `command -v cursor-tracker`.
+
 ## Keys
 
 | Key | Action |
