@@ -45,14 +45,12 @@ var (
 	stShareTrack    = lipgloss.NewStyle().Foreground(colTrack)
 
 	// Tabs.
-	stTabActive   = lipgloss.NewStyle().Foreground(colOnAccent).Background(colAccent).Bold(true)
-	stTabKey      = lipgloss.NewStyle().Foreground(colFgMuted).Bold(true)
-	stTabLabel    = lipgloss.NewStyle().Foreground(colFgSoft)
-	stTabKeyOn    = lipgloss.NewStyle().Foreground(colOnAccent).Background(colAccent).Bold(true)
-	stTabLabelOn  = lipgloss.NewStyle().Foreground(colOnAccent).Background(colAccent).Bold(true)
-	stTitleBar    = lipgloss.NewStyle().Foreground(colFgMuted).Background(colBarBg)
-	stRule        = lipgloss.NewStyle().Foreground(colRule)
-	stChromeTitle = lipgloss.NewStyle().Foreground(colFgMuted).Background(colBarBg)
+	stTabActive  = lipgloss.NewStyle().Foreground(colOnAccent).Background(colAccent).Bold(true)
+	stTabKey     = lipgloss.NewStyle().Foreground(colFgMuted).Bold(true)
+	stTabLabel   = lipgloss.NewStyle().Foreground(colFgSoft)
+	stTabKeyOn   = lipgloss.NewStyle().Foreground(colOnAccent).Background(colAccent).Bold(true)
+	stTabLabelOn = lipgloss.NewStyle().Foreground(colOnAccent).Background(colAccent).Bold(true)
+	stRule       = lipgloss.NewStyle().Foreground(colRule)
 
 	// Warning banner.
 	stWarn = lipgloss.NewStyle().Foreground(colAccent).Bold(true)

@@ -19,10 +19,6 @@ const (
 
 var tabNames = []string{"Overview", "Models", "Sessions", "History"}
 
-// Version is shown in the title bar; override at build time with
-// -ldflags "-X github.com/sasmitai/cursor-tracker/internal/tui.Version=v1.2.3".
-var Version = "dev"
-
 var dash = "—"
 
 // paintCanvas pads each line to the terminal width and fills it with the
@@ -49,7 +45,6 @@ func render(a *App) string {
 	inner := w - 2 // body padding
 
 	var b strings.Builder
-	b.WriteString(chromeTitleBar(a, w) + "\n\n")
 
 	if a.warning != "" {
 		b.WriteString(" " + stWarn.Render("! "+a.warning) + "\n\n")
@@ -89,21 +84,6 @@ func render(a *App) string {
 	b.WriteString("\n")
 	b.WriteString(footer(a, inner))
 	return paintCanvas(b.String(), w)
-}
-
-// chromeTitleBar mimics the terminal window's title bar from the design.
-func chromeTitleBar(a *App, w int) string {
-	dots := stGood.Render("●") + " " + stAccent.Render("●") + " " + stBad.Render("●")
-	title := "cursor-tracker — ~/cursor-tracker — zsh"
-	right := Version
-	left := " " + dots
-	pad := w - lipglossWidth(left) - lipglossWidth(title) - lipglossWidth(right) - 2
-	if pad < 2 {
-		pad = 2
-	}
-	g1, g2 := pad/2, pad-pad/2
-	return left + strings.Repeat(" ", g1) + stChromeTitle.Render(title) +
-		strings.Repeat(" ", g2) + stChromeTitle.Render(right) + " "
 }
 
 func headerRow(a *App, inner int) string {

@@ -6,8 +6,6 @@ OpenBot agent session activity. Built for the **OpenBot → `cursor-agent` (API 
 workflow, so it works without the Cursor desktop app running.
 
 ```
- ● ● ●            cursor-tracker — ~/cursor-tracker — zsh            v1.0.0
-
 CURSOR SPEND▌                                          NOV 01 — DEC 01 2026
 
  █  ▀▀█     █▀█ █▀█                                     █  ▀▀█     █▀█
