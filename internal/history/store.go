@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/sasmitai/cursor-tracker/internal/source"
+	"github.com/ariksasmita/cursor-tracker/internal/source"
 
 	_ "modernc.org/sqlite"
 )

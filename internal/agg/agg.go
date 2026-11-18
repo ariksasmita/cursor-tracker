@@ -6,7 +6,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/sasmitai/cursor-tracker/internal/source"
+	"github.com/ariksasmita/cursor-tracker/internal/source"
 )
 
 // Aggregate holds derived period metrics. Zero values plus Has* flags

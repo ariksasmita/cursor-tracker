@@ -8,8 +8,8 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/sasmitai/cursor-tracker/internal/agg"
-	"github.com/sasmitai/cursor-tracker/internal/source"
+	"github.com/ariksasmita/cursor-tracker/internal/agg"
+	"github.com/ariksasmita/cursor-tracker/internal/source"
 )
 
 const (

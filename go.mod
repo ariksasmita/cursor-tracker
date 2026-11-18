@@ -1,4 +1,4 @@
-module github.com/sasmitai/cursor-tracker
+module github.com/ariksasmita/cursor-tracker
 
 go 1.26.2
 

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sasmitai/cursor-tracker/internal/source"
+	"github.com/ariksasmita/cursor-tracker/internal/source"
 )
 
 func samplePeriod(fetched time.Time) source.PeriodUsage {

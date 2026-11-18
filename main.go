@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/sasmitai/cursor-tracker/internal/app"
+	"github.com/ariksasmita/cursor-tracker/internal/app"
 )
 
 func main() {

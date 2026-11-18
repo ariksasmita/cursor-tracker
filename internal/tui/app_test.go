@@ -11,9 +11,9 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/sasmitai/cursor-tracker/internal/agg"
-	"github.com/sasmitai/cursor-tracker/internal/history"
-	"github.com/sasmitai/cursor-tracker/internal/source"
+	"github.com/ariksasmita/cursor-tracker/internal/agg"
+	"github.com/ariksasmita/cursor-tracker/internal/history"
+	"github.com/ariksasmita/cursor-tracker/internal/source"
 )
 
 func aggFor(a *App) agg.Aggregate {

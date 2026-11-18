@@ -14,7 +14,7 @@
 
 - Read-only access to all foreign DBs: open with `file:<path>?mode=ro` URI; never write Cursor/OpenBot files.
 - No CGO; SQLite via `modernc.org/sqlite`.
-- Binary name `cursor-tracker`; module `github.com/sasmitai/cursor-tracker`.
+- Binary name `cursor-tracker`; module `github.com/ariksasmita/cursor-tracker`.
 - API base URL `https://api2.cursor.sh` overridable via env `CURSOR_API_ENDPOINT`.
 - Token resolution order: env `CURSOR_TOKEN` → keychain (`security find-generic-password -a cursor-user -s cursor-access-token -w`) → `state.vscdb` `cursorAuth/accessToken`.
 - History DB at `$CURSOR_TRACKER_HOME/history.db`, default `~/.cursor-tracker/history.db` (create dir on first run).
@@ -72,7 +72,7 @@ type SessionSource interface {
 }
 ```
 
-- [ ] **Step 1: Init module** — `go mod init github.com/sasmitai/cursor-tracker`; `main.go` prints "cursor-tracker" and exits 0.
+- [ ] **Step 1: Init module** — `go mod init github.com/ariksasmita/cursor-tracker`; `main.go` prints "cursor-tracker" and exits 0.
 - [ ] **Step 2: Verify** — `go build ./...` passes.
 - [ ] **Step 3: Commit** — `git init` if needed; `git add -A; git commit -m "chore: scaffold module and domain types"`.
 

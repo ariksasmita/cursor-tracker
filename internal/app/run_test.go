@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sasmitai/cursor-tracker/internal/auth"
+	"github.com/ariksasmita/cursor-tracker/internal/auth"
 )
 
 func TestBuildDeps_HappyPath(t *testing.T) {

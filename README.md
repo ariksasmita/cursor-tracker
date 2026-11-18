@@ -42,7 +42,7 @@ Layout and palette follow the design in `Cursor Usage TUI-export.html`.
 ## Install
 
 ```bash
-go install github.com/sasmitai/cursor-tracker@latest
+go install github.com/ariksasmita/cursor-tracker@latest
 ```
 
 Or from a checkout: `go build -o cursor-tracker .`
@@ -108,6 +108,13 @@ Resolved in this order, first hit wins:
 
 ## Notes
 
+- Read-only by design: it never writes to Cursor or OpenBot files, and never
+  stores credentials. The token is read per run and kept in memory.
+- The Cursor dashboard endpoint is **unofficial** and may change or stop working
+  without notice. The app degrades to the cached snapshot and says so in the
+  footer.
+- Spend shown is Cursor's own reporting for your account; this project makes no
+  billing claims of its own.
 - Strictly read-only against Cursor and OpenBot files.
 - The period window is the **current calendar month**: from the 1st through the
   end of the month, in local time. Both the live API and the cached-snapshot
@@ -115,3 +122,7 @@ Resolved in this order, first hit wins:
   whichever source answered.
 - `aiSettings.enterprisePlanUsageSnapshot`-backed fallback data can be stale; the
   footer always shows the age of the data and which source produced it.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
