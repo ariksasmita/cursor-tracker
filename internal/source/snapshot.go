@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"sort"
 	"strconv"
 	"time"
 
@@ -75,94 +74,92 @@ func (s *LocalSnapshot) load() (*snapshotDoc, error) {
 	return &doc, nil
 }
 
-func (s *LocalSnapshot) chartFor(startMs, endMs int64) (*chartResponse, error) {
-	doc, err := s.load()
-	if err != nil {
-		return nil, err
-	}
-	charts := append([]struct {
-		PeriodStartMs int64  `json:"periodStartMs"`
-		PeriodEndMs   int64  `json:"periodEndMs"`
-		Response      string `json:"response"`
-	}{}, doc.Charts...)
-	sort.SliceStable(charts, func(i, j int) bool { return charts[i].PeriodStartMs > charts[j].PeriodStartMs })
-	for _, c := range charts {
-		if c.PeriodStartMs == startMs && c.PeriodEndMs == endMs {
-			var out chartResponse
-			if err := json.Unmarshal([]byte(c.Response), &out); err != nil {
-				return nil, fmt.Errorf("parse chart response: %w", err)
-			}
-			return &out, nil
-		}
-	}
-	// Fall back to newest chart when exact bounds not requested.
-	if len(charts) > 0 && startMs == 0 && endMs == 0 {
-		var out chartResponse
-		if err := json.Unmarshal([]byte(charts[0].Response), &out); err != nil {
-			return nil, fmt.Errorf("parse chart response: %w", err)
-		}
-		return &out, nil
-	}
-	return &chartResponse{}, nil
-}
-
-// FetchPeriodUsage implements UsageSource from the newest cached period.
-// Bounds come from the newest chart rather than the document's top-level
-// fields: the daily rows live under the chart's own bounds, so reporting the
-// same bounds keeps FetchDailySpend resolvable.
+// FetchPeriodUsage implements UsageSource for the current calendar month,
+// summing cached rows that fall inside it. Bounds are the month, not the
+// cached chart's own range, so the tracker reports one consistent window
+// whichever source answered.
 func (s *LocalSnapshot) FetchPeriodUsage(ctx context.Context) (*PeriodUsage, error) {
 	doc, err := s.load()
 	if err != nil {
 		return nil, err
 	}
-	start, end := doc.PeriodStartMs, doc.PeriodEndMs
-	if len(doc.Charts) > 0 {
-		newest := doc.Charts[0]
-		for _, c := range doc.Charts[1:] {
-			if c.PeriodStartMs > newest.PeriodStartMs {
-				newest = c
-			}
-		}
-		start, end = newest.PeriodStartMs, newest.PeriodEndMs
-	}
-	chart, err := s.chartFor(start, end)
+	startMs, endMs := monthBounds(nowFn())
+	rows, err := s.FetchDailySpend(ctx, startMs, endMs)
 	if err != nil {
 		return nil, err
 	}
 	var total int64
-	for _, r := range chart.DailySpend {
+	for _, r := range rows {
 		total += r.SpendCents
 	}
 	return &PeriodUsage{
-		PeriodStartMs:   start,
-		PeriodEndMs:     end,
+		PeriodStartMs:   startMs,
+		PeriodEndMs:     endMs,
 		TotalSpendCents: total,
-		LimitCents:      chart.EffectiveLimitCents,
+		LimitCents:      s.limitCents(doc),
 		FetchedAt:       time.UnixMilli(doc.FetchedAt),
 	}, nil
 }
 
-// FetchDailySpend implements UsageSource, returning the cached rows for the
-// requested period bounds.
+// limitCents reports the newest cached chart's effective limit.
+func (s *LocalSnapshot) limitCents(doc *snapshotDoc) int64 {
+	if len(doc.Charts) == 0 {
+		return 0
+	}
+	newest := doc.Charts[0]
+	for _, c := range doc.Charts[1:] {
+		if c.PeriodStartMs > newest.PeriodStartMs {
+			newest = c
+		}
+	}
+	var chart chartResponse
+	if err := json.Unmarshal([]byte(newest.Response), &chart); err != nil {
+		return 0
+	}
+	return chart.EffectiveLimitCents
+}
+
+// FetchDailySpend implements UsageSource, returning cached rows that fall
+// inside [periodStartMs, periodEndMs) across every cached chart.
 func (s *LocalSnapshot) FetchDailySpend(ctx context.Context, periodStartMs, periodEndMs int64) ([]DailySpend, error) {
-	chart, err := s.chartFor(periodStartMs, periodEndMs)
+	doc, err := s.load()
 	if err != nil {
 		return nil, err
 	}
-	rows := make([]DailySpend, 0, len(chart.DailySpend))
-	for _, r := range chart.DailySpend {
-		dayMs, err := strconv.ParseInt(r.Day, 10, 64)
-		if err != nil {
-			return nil, fmt.Errorf("bad day %q: %w", r.Day, err)
+	startDay := time.UnixMilli(periodStartMs).In(time.Local)
+	start := time.Date(startDay.Year(), startDay.Month(), startDay.Day(), 0, 0, 0, 0, time.Local)
+	endDay := time.UnixMilli(periodEndMs).In(time.Local)
+	end := time.Date(endDay.Year(), endDay.Month(), endDay.Day(), 0, 0, 0, 0, time.Local)
+
+	seen := make(map[string]struct{}, len(doc.Charts))
+	var rows []DailySpend
+	for _, c := range doc.Charts {
+		if _, dup := seen[c.Response]; dup {
+			continue // the same chart can appear for multiple spend types
 		}
-		tokens, _ := strconv.ParseInt(r.TotalTokens, 10, 64)
-		utc := time.UnixMilli(dayMs).UTC()
-		rows = append(rows, DailySpend{
-			Day:         time.Date(utc.Year(), utc.Month(), utc.Day(), 0, 0, 0, 0, time.Local),
-			Category:    r.Category,
-			SpendCents:  r.SpendCents,
-			TotalTokens: tokens,
-		})
+		seen[c.Response] = struct{}{}
+		var chart chartResponse
+		if err := json.Unmarshal([]byte(c.Response), &chart); err != nil {
+			return nil, fmt.Errorf("parse chart response: %w", err)
+		}
+		for _, r := range chart.DailySpend {
+			dayMs, err := strconv.ParseInt(r.Day, 10, 64)
+			if err != nil {
+				return nil, fmt.Errorf("bad day %q: %w", r.Day, err)
+			}
+			utc := time.UnixMilli(dayMs).UTC()
+			day := time.Date(utc.Year(), utc.Month(), utc.Day(), 0, 0, 0, 0, time.Local)
+			if day.Before(start) || !day.Before(end) {
+				continue
+			}
+			tokens, _ := strconv.ParseInt(r.TotalTokens, 10, 64)
+			rows = append(rows, DailySpend{
+				Day:         day,
+				Category:    r.Category,
+				SpendCents:  r.SpendCents,
+				TotalTokens: tokens,
+			})
+		}
 	}
 	return rows, nil
 }

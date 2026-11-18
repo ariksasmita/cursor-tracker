@@ -62,7 +62,9 @@ Resolved in this order, first hit wins:
 ## Notes
 
 - Strictly read-only against Cursor and OpenBot files.
-- The period window is the API's billing cycle when it reports sane bounds;
-  otherwise it falls back to a trailing 30-day window.
+- The period window is the **current calendar month**: from the 1st through the
+  end of the month, in local time. Both the live API and the cached-snapshot
+  fallback report that same window, so month-to-date spend is comparable
+  whichever source answered.
 - `aiSettings.enterprisePlanUsageSnapshot`-backed fallback data can be stale; the
   footer always shows the age of the data and which source produced it.

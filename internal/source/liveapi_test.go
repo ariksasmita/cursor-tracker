@@ -2,6 +2,7 @@ package source
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -40,7 +41,6 @@ func stubPost(bodyByURL map[string][]byte, statusByURL map[string]int) (reset fu
 func TestFetchPeriodUsage(t *testing.T) {
 	daily := loadFixture(t, "daily.json")
 	reset, _ := stubPost(map[string][]byte{
-		"https://api2.cursor.sh/aiserver.v1.DashboardService/GetCurrentPeriodUsage":   loadFixture(t, "period.json"),
 		"https://api2.cursor.sh/aiserver.v1.DashboardService/GetDailySpendByCategory": daily,
 	}, nil)
 	defer reset()
@@ -67,6 +67,9 @@ func TestFetchPeriodUsage(t *testing.T) {
 	}
 	if p.PeriodEndMs <= p.PeriodStartMs {
 		t.Errorf("period bounds not sane: %d..%d", p.PeriodStartMs, p.PeriodEndMs)
+	}
+	if start := time.UnixMilli(p.PeriodStartMs).In(time.Local); start.Day() != 1 {
+		t.Errorf("period must start on the 1st, got %v", start)
 	}
 	if p.FetchedAt.IsZero() {
 		t.Error("FetchedAt not set")
@@ -104,7 +107,7 @@ func TestFetchDailySpend(t *testing.T) {
 
 func TestAPIError(t *testing.T) {
 	reset, _ := stubPost(nil, map[string]int{
-		"https://api2.cursor.sh/aiserver.v1.DashboardService/GetCurrentPeriodUsage": 401,
+		"https://api2.cursor.sh" + methodDailySpend: 401,
 	})
 	defer reset()
 
@@ -128,9 +131,6 @@ func TestAuthorizationHeaderSent(t *testing.T) {
 	var gotToken string
 	post = func(url string, body []byte, token string) ([]byte, int, error) {
 		gotToken = token
-		if url == "https://api2.cursor.sh"+methodPeriodUsage {
-			return loadFixture(t, "period.json"), 200, nil
-		}
 		return loadFixture(t, "daily.json"), 200, nil
 	}
 	api := NewLiveAPI("https://api2.cursor.sh", "tok-secret")
@@ -139,5 +139,39 @@ func TestAuthorizationHeaderSent(t *testing.T) {
 	}
 	if gotToken != "tok-secret" {
 		t.Fatalf("token not passed to transport: %q", gotToken)
+	}
+}
+
+func TestFetchPeriodUsage_UsesCalendarMonth(t *testing.T) {
+	oldNow := nowFn
+	nowFn = func() time.Time { return time.Date(2026, 11, 18, 12, 0, 0, 0, time.Local) }
+	defer func() { nowFn = oldNow }()
+
+	var sentStart, sentEnd int64
+	old := post
+	defer func() { post = old }()
+	post = func(url string, body []byte, token string) ([]byte, int, error) {
+		var req struct {
+			PeriodStartMs int64 `json:"periodStartMs"`
+			PeriodEndMs   int64 `json:"periodEndMs"`
+		}
+		_ = json.Unmarshal(body, &req)
+		sentStart, sentEnd = req.PeriodStartMs, req.PeriodEndMs
+		return loadFixture(t, "daily.json"), 200, nil
+	}
+
+	api := NewLiveAPI("https://api2.cursor.sh", "tok")
+	p, err := api.FetchPeriodUsage(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantStart := time.Date(2026, 11, 1, 0, 0, 0, 0, time.Local).UnixMilli()
+	wantEnd := time.Date(2026, 12, 1, 0, 0, 0, 0, time.Local).UnixMilli()
+	if p.PeriodStartMs != wantStart || p.PeriodEndMs != wantEnd {
+		t.Fatalf("period must be calendar month: got %d..%d want %d..%d",
+			p.PeriodStartMs, p.PeriodEndMs, wantStart, wantEnd)
+	}
+	if sentStart != wantStart || sentEnd != wantEnd {
+		t.Fatalf("request must ask for the month window: sent %d..%d", sentStart, sentEnd)
 	}
 }

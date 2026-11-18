@@ -64,3 +64,6 @@ Token resolution order:
 - Unofficial API risk accepted; all API calls are read-only unary POSTs; fallback sources cover outage.
 - `UsageSource`/`SessionSource` interfaces so sources are swappable.
 - Binary name: `cursor-tracker`. History DB path overridable via `CURSOR_TRACKER_HOME`.
+- Reporting window is the current **calendar month** (1st → end of month, local
+  time), not the API billing cycle or a rolling 30 days. Revised after the first
+  working build: month-to-date is what the operator reads.

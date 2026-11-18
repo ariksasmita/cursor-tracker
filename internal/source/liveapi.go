@@ -33,6 +33,16 @@ var post = func(url string, body []byte, token string) ([]byte, int, error) {
 	return out, resp.StatusCode, nil
 }
 
+// nowFn is the clock; a package var so tests pin the calendar month.
+var nowFn = time.Now
+
+// monthBounds returns [first of this month, first of next month) in local
+// time, in epoch milliseconds.
+func monthBounds(now time.Time) (int64, int64) {
+	start := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+	return start.UnixMilli(), start.AddDate(0, 1, 0).UnixMilli()
+}
+
 // LiveAPI reads spend data from Cursor's DashboardService ConnectRPC API.
 type LiveAPI struct {
 	endpoint string
@@ -48,15 +58,7 @@ func NewLiveAPI(endpoint, token string) *LiveAPI {
 // Name implements UsageSource.
 func (a *LiveAPI) Name() string { return "live" }
 
-const (
-	methodPeriodUsage = "/aiserver.v1.DashboardService/GetCurrentPeriodUsage"
-	methodDailySpend  = "/aiserver.v1.DashboardService/GetDailySpendByCategory"
-)
-
-type currentPeriodResponse struct {
-	BillingCycleStart string `json:"billingCycleStart"`
-	BillingCycleEnd   string `json:"billingCycleEnd"`
-}
+const methodDailySpend = "/aiserver.v1.DashboardService/GetDailySpendByCategory"
 
 type dailySpendResponse struct {
 	DailySpend []struct {
@@ -90,17 +92,11 @@ func truncate(b []byte, n int) string {
 	return string(b)
 }
 
-// FetchPeriodUsage implements UsageSource. The API's cycle fields are
-// timestamps of the fetch moment rather than usable bounds, so the spend
-// window defaults to the trailing 30 days when they are not sane.
+// FetchPeriodUsage implements UsageSource for the current calendar month,
+// from the 1st through the end of the month.
 func (a *LiveAPI) FetchPeriodUsage(ctx context.Context) (*PeriodUsage, error) {
-	var period currentPeriodResponse
-	if err := a.call(methodPeriodUsage, map[string]any{}, &period); err != nil {
-		return nil, err
-	}
-
-	now := time.Now()
-	startMs, endMs := parseBounds(period, now)
+	now := nowFn()
+	startMs, endMs := monthBounds(now)
 
 	daily, err := a.fetchDaily(startMs, endMs)
 	if err != nil {
@@ -118,17 +114,6 @@ func (a *LiveAPI) FetchPeriodUsage(ctx context.Context) (*PeriodUsage, error) {
 		LimitCents:      daily.EffectiveLimitCents,
 		FetchedAt:       now,
 	}, nil
-}
-
-func parseBounds(period currentPeriodResponse, now time.Time) (int64, int64) {
-	start, err1 := strconv.ParseInt(period.BillingCycleStart, 10, 64)
-	end, err2 := strconv.ParseInt(period.BillingCycleEnd, 10, 64)
-	sane := err1 == nil && err2 == nil && start > 0 && end > start && start > now.Add(-45*24*time.Hour).UnixMilli()
-	if sane {
-		return start, end
-	}
-	dayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-	return dayStart.AddDate(0, 0, -29).UnixMilli(), dayStart.AddDate(0, 0, 1).UnixMilli()
 }
 
 // FetchDailySpend implements UsageSource.

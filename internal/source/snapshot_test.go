@@ -44,6 +44,10 @@ func makeSnapshotDB(t *testing.T, value string, withRow bool) string {
 }
 
 func TestLocalSnapshot_PeriodFromNewestChart(t *testing.T) {
+	oldNow := nowFn
+	nowFn = func() time.Time { return time.Date(2026, 11, 18, 12, 0, 0, 0, time.Local) }
+	defer func() { nowFn = oldNow }()
+
 	ls, err := NewLocalSnapshot(makeSnapshotDB(t, snapshotJSON, true))
 	if err != nil {
 		t.Fatal(err)
@@ -52,8 +56,8 @@ func TestLocalSnapshot_PeriodFromNewestChart(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if p.PeriodStartMs != 1793577600000 || p.PeriodEndMs != 1796083200000 {
-		t.Errorf("bounds: %d..%d", p.PeriodStartMs, p.PeriodEndMs)
+	if p.PeriodStartMs != time.Date(2026, 11, 1, 0, 0, 0, 0, time.Local).UnixMilli() {
+		t.Errorf("bounds must be the calendar month, got %d..%d", p.PeriodStartMs, p.PeriodEndMs)
 	}
 	if p.TotalSpendCents != 455 { // 330+125 from newest chart
 		t.Errorf("TotalSpendCents=%d want 455", p.TotalSpendCents)
@@ -91,12 +95,14 @@ func TestLocalSnapshot_KeyAbsent(t *testing.T) {
 	}
 }
 
-func TestLocalSnapshot_BoundsFromNewestChart(t *testing.T) {
-	// Top-level bounds disagree with the newest chart; the chart wins because
-	// daily rows are keyed by the chart's own bounds.
-	doc := `{"periodStartMs":1,"periodEndMs":2,"fetchedAt":1794560969745,"charts":[
-	 {"periodStartMs":1793577600000,"periodEndMs":1796083200000,"response":"{\"dailySpend\":[{\"day\":\"1793664000000\",\"category\":\"m\",\"spendCents\":100,\"totalTokens\":\"10\"}],\"effectiveLimitCents\":10000}"}]}`
-	ls, err := NewLocalSnapshot(makeSnapshotDB(t, doc, true))
+func TestLocalSnapshot_DailyResolvesForReportedBounds(t *testing.T) {
+	// The reported period bounds must resolve when handed back to
+	// FetchDailySpend (the TUI does exactly that).
+	oldNow := nowFn
+	nowFn = func() time.Time { return time.Date(2026, 11, 18, 12, 0, 0, 0, time.Local) }
+	defer func() { nowFn = oldNow }()
+
+	ls, err := NewLocalSnapshot(makeSnapshotDB(t, snapshotJSON, true))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -104,11 +110,46 @@ func TestLocalSnapshot_BoundsFromNewestChart(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if p.PeriodStartMs != 1793577600000 || p.PeriodEndMs != 1796083200000 {
-		t.Fatalf("bounds must come from newest chart, got %d..%d", p.PeriodStartMs, p.PeriodEndMs)
+	rows, err := ls.FetchDailySpend(context.Background(), p.PeriodStartMs, p.PeriodEndMs)
+	if err != nil || len(rows) == 0 {
+		t.Fatalf("daily rows must resolve for reported bounds: %d rows, err %v", len(rows), err)
+	}
+	var sum int64
+	for _, r := range rows {
+		sum += r.SpendCents
+	}
+	if sum != p.TotalSpendCents {
+		t.Fatalf("daily sum %d must equal period total %d", sum, p.TotalSpendCents)
+	}
+}
+
+func TestLocalSnapshot_MonthWindow(t *testing.T) {
+	oldNow := nowFn
+	nowFn = func() time.Time { return time.Date(2026, 11, 18, 12, 0, 0, 0, time.Local) }
+	defer func() { nowFn = oldNow }()
+
+	ls, err := NewLocalSnapshot(makeSnapshotDB(t, snapshotJSON, true))
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, err := ls.FetchPeriodUsage(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantStart := time.Date(2026, 11, 1, 0, 0, 0, 0, time.Local).UnixMilli()
+	wantEnd := time.Date(2026, 12, 1, 0, 0, 0, 0, time.Local).UnixMilli()
+	if p.PeriodStartMs != wantStart || p.PeriodEndMs != wantEnd {
+		t.Fatalf("snapshot must also use the calendar month: %d..%d", p.PeriodStartMs, p.PeriodEndMs)
+	}
+	// Only the November rows count: 330 + 125, not the October row.
+	if p.TotalSpendCents != 455 {
+		t.Fatalf("month total=%d want 455", p.TotalSpendCents)
+	}
+	if p.LimitCents != 10000 {
+		t.Errorf("limit=%d want 10000", p.LimitCents)
 	}
 	rows, err := ls.FetchDailySpend(context.Background(), p.PeriodStartMs, p.PeriodEndMs)
-	if err != nil || len(rows) != 1 {
-		t.Fatalf("daily rows must resolve for reported bounds: %d rows, err %v", len(rows), err)
+	if err != nil || len(rows) != 2 {
+		t.Fatalf("want 2 November rows, got %d (err %v)", len(rows), err)
 	}
 }
