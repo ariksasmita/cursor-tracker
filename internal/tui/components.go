@@ -292,6 +292,19 @@ func bigDigits(s string) []string {
 	return out
 }
 
+// heroBlock renders digits as three tall rows with symbol appended to the
+// end of the middle row, so currency signs and percent marks both trail the
+// number. The returned block is plain text with equal-width rows.
+func heroBlock(digits, symbol string) []string {
+	rows := bigDigits(digits)
+	if len(rows) == 0 {
+		return rows
+	}
+	mid := len(rows) / 2
+	rows[mid] = strings.TrimRight(rows[mid], " ") + symbol
+	return padRows(rows)
+}
+
 // padRows makes every row of a glyph block the same width so blocks stack
 // into a clean rectangle.
 func padRows(rows []string) []string {

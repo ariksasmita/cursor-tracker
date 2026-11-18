@@ -11,7 +11,7 @@ workflow, so it works without the Cursor desktop app running.
 CURSOR SPEND▌                                          NOV 01 — DEC 01 2026
 
  █  ▀▀█     █▀█ █▀█                                     █  ▀▀█     █▀█
-$ █  ▄▄█     ▀▀█ █ █                                    █  ▄▄█     ▀▀█%
+ █  ▄▄█     ▀▀█ █ █$                                    █  ▄▄█     ▀▀█%
 ▄█▄ █▄▄  ▄  ▄▄█ █▄█                                   ▄█▄ █▄▄  ▄  ▄▄█
 of $100.00                                            $78.50 LEFT
 
@@ -41,8 +41,8 @@ It turns solid red once you pass the limit, and the pace readout turns red when
 you are spending faster than the month is elapsing.
 
 The hero numerals are drawn with a 3-row block font (`internal/tui/components.go`,
-`bigFont`): digits render tall, while `$` and `%` stay at normal scale so the two
-blocks share a baseline. Swap that one table to change the typeface.
+`bigFont`): digits render tall, and both `$` and `%` trail their number at normal
+scale on the middle row (`heroBlock`). Swap that one table to change the typeface.
 
 Press `c` for compact mode — it drops the metrics row and tab bar for a denser
 screen, keeping the hero, budget bar, and the active tab's body.

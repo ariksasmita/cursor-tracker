@@ -124,12 +124,8 @@ func monthRangeLabel(p *source.PeriodUsage) string {
 func heroRow(a *App, ag agg.Aggregate, inner int) string {
 	p := a.result.Period
 
-	// Amount block: tall numerals with "$" at normal scale on the middle row.
-	amountRows := stampColour(padRows(bigDigits(fmt.Sprintf("%.2f", float64(p.TotalSpendCents)/100))), stAmount)
-	mid := len(amountRows) / 2
-	if mid < len(amountRows) {
-		amountRows[mid] = stAmount.Render("$") + amountRows[mid]
-	}
+	// Amount block: tall numerals with a trailing "$" like the percentage.
+	amountRows := stampColour(heroBlock(fmt.Sprintf("%.2f", float64(p.TotalSpendCents)/100), "$"), stAmount)
 	left := strings.Join(append(amountRows,
 		stMuted.Render("of "+fmtMoney(float64(p.LimitCents)))), "\n")
 
@@ -137,18 +133,12 @@ func heroRow(a *App, ag agg.Aggregate, inner int) string {
 		return left
 	}
 
-	pctDigits := padRows(bigDigits(fmt.Sprintf("%.1f", ag.SpendFraction*100)))
-	pctRows := stampColour(pctDigits, stAccentBold)
+	pctStyle := stAccentBold
 	if ag.SpendFraction >= 1 {
-		pctRows = stampColour(pctDigits, stBad)
+		pctStyle = stBad
 	}
-	mid = len(pctRows) / 2
-	if mid < len(pctRows) {
-		pctRows[mid] = pctRows[mid] + stAccentBold.Render("%")
-		if ag.SpendFraction >= 1 {
-			pctRows[mid] = strings.TrimSuffix(pctRows[mid], stAccentBold.Render("%")) + stBad.Render("%")
-		}
-	}
+	pctRows := stampColour(heroBlock(fmt.Sprintf("%.1f", ag.SpendFraction*100), "%"), pctStyle)
+
 	leftLabel := stLabel.Render(fmtMoney(float64(ag.RemainingCents)) + " LEFT")
 	if ag.RemainingCents < 0 {
 		leftLabel = stWarn.Render("OVER BUDGET " + fmtMoney(float64(-ag.RemainingCents)))

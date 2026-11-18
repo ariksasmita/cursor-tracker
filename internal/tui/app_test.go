@@ -332,3 +332,27 @@ func TestCompactToggleHidesMetricsAndTabs(t *testing.T) {
 		t.Error("c must toggle back to full mode")
 	}
 }
+
+func TestHeroBlockSuffixSymbol(t *testing.T) {
+	rows := heroBlock("12.90", "$")
+	if len(rows) != 3 {
+		t.Fatalf("want 3 rows, got %d", len(rows))
+	}
+	mid := rows[len(rows)/2]
+	if !strings.HasSuffix(strings.TrimRight(mid, " "), "$") {
+		t.Errorf("symbol must be a suffix on the middle row, got %q", mid)
+	}
+	if strings.HasPrefix(strings.TrimSpace(rows[0]), "$") {
+		t.Errorf("symbol must not be a prefix, got %q", rows[0])
+	}
+	for _, r := range rows {
+		if len([]rune(r)) != len([]rune(rows[0])) {
+			t.Errorf("rows must be equal width: %q", rows)
+		}
+	}
+	// Percentages keep working the same way.
+	pct := heroBlock("21.5", "%")
+	if !strings.HasSuffix(strings.TrimRight(pct[len(pct)/2], " "), "%") {
+		t.Errorf("percent suffix broken: %q", pct[1])
+	}
+}
