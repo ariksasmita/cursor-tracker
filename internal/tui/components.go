@@ -302,7 +302,30 @@ func heroBlock(digits, symbol string) []string {
 	}
 	mid := len(rows) / 2
 	rows[mid] = strings.TrimRight(rows[mid], " ") + symbol
-	return padRows(rows)
+	return trimCommonIndent(padRows(rows))
+}
+
+// trimCommonIndent removes the blank left columns a glyph set carries as side
+// bearing, so hero numerals line up with the text above and below them.
+func trimCommonIndent(rows []string) []string {
+	if len(rows) == 0 {
+		return rows
+	}
+	min := -1
+	for _, r := range rows {
+		n := len([]rune(r)) - len([]rune(strings.TrimLeft(r, " ")))
+		if min < 0 || n < min {
+			min = n
+		}
+	}
+	if min <= 0 {
+		return rows
+	}
+	out := make([]string, len(rows))
+	for i, r := range rows {
+		out[i] = string([]rune(r)[min:])
+	}
+	return out
 }
 
 // rightAlignBlock pads every line on the left so the block shares one right

@@ -436,3 +436,46 @@ func stripStyles(s string) string {
 	re := regexp.MustCompile("\x1b\\[[0-9;?]*[a-zA-Z]")
 	return re.ReplaceAllString(s, "")
 }
+
+func TestSymmetricHorizontalPadding(t *testing.T) {
+	now := time.Date(2026, 11, 18, 12, 0, 0, 0, time.Local)
+	res := goodResult(now)
+	res.Period.PeriodStartMs = time.Date(2026, 11, 1, 0, 0, 0, 0, time.Local).UnixMilli()
+	res.Period.PeriodEndMs = time.Date(2026, 12, 1, 0, 0, 0, 0, time.Local).UnixMilli()
+	app := newTestApp(t, res, nil, nil, nil)
+	app.width = 100
+
+	const (
+		pad   = 2
+		width = 100
+	)
+	var sawRule bool
+	for _, line := range strings.Split(app.View(), "\n") {
+		if strings.TrimSpace(line) == "" {
+			continue // blank spacer rows carry no content
+		}
+		runes := []rune(line)
+		if len(runes) != width {
+			t.Fatalf("line must fill the canvas: %d %q", len(runes), line)
+		}
+		lead := len(runes) - len([]rune(strings.TrimLeft(line, " ")))
+		trail := len(runes) - len([]rune(strings.TrimRight(line, " ")))
+		// Glyph side bearings may indent a numeral, never less than the gutter.
+		if lead < pad {
+			t.Errorf("left gutter %d < %d: %q", lead, pad, line)
+		}
+		if trail < pad {
+			t.Errorf("right gutter %d < %d: %q", trail, pad, line)
+		}
+		// Structural rules must span exactly [pad, width-pad).
+		if strings.Contains(line, "─") {
+			sawRule = true
+			if lead != pad || trail != pad {
+				t.Errorf("rule padding l=%d r=%d want %d/%d: %q", lead, trail, pad, pad, line)
+			}
+		}
+	}
+	if !sawRule {
+		t.Error("no structural rule found to measure padding against")
+	}
+}

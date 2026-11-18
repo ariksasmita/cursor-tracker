@@ -23,11 +23,18 @@ var dash = "—"
 
 // paintCanvas pads each line to the terminal width and fills it with the
 // design's dark canvas colour.
-func paintCanvas(view string, w int) string {
+func paintCanvas(view string, w, pad int) string {
 	bg := lipgloss.NewStyle().Background(colBg)
+	gutter := strings.Repeat(" ", pad)
 	lines := strings.Split(view, "\n")
 	for i, l := range lines {
-		lines[i] = bg.Render(padStyled(l, w))
+		// Blank rows stay blank; every other row is indented by the gutter
+		// and then filled so the right margin matches the left.
+		if strings.TrimSpace(l) == "" {
+			lines[i] = bg.Render(strings.Repeat(" ", w))
+			continue
+		}
+		lines[i] = bg.Render(padStyled(gutter+l, w))
 	}
 	return strings.Join(lines, "\n")
 }
@@ -42,7 +49,9 @@ func render(a *App) string {
 	if w < minWidth {
 		w = defaultWidth
 	}
-	inner := w - 2 // body padding
+	// Symmetric gutters: content occupies [pad, w-pad).
+	const pad = 2
+	inner := w - 2*pad
 
 	var b strings.Builder
 
@@ -83,7 +92,7 @@ func render(a *App) string {
 	}
 	b.WriteString("\n")
 	b.WriteString(footer(a, inner))
-	return paintCanvas(b.String(), w)
+	return paintCanvas(b.String(), w, pad)
 }
 
 func headerRow(a *App, inner int) string {
