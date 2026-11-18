@@ -7,10 +7,12 @@ workflow, so it works without the Cursor desktop app running.
 
 ## Preview
 
-| Mode | Screenshot |
-|---|---|
-| **Compact** (default) — hero, budget bar, pace | <img src="docs/screenshots/compact-mode.png" width="560" alt="cursor-tracker compact mode"> |
-| **Full** — `c` adds metrics, tabs, daily chart, top models | <img src="docs/screenshots/full-mode.png" width="560" alt="cursor-tracker full mode"> |
+| Preview |
+|:--|
+| **Compact** — the default glance: hero, budget bar, legend, pace |
+| <img src="docs/screenshots/compact-mode.png" width="620" alt="cursor-tracker compact mode"> |
+| **Full** — press `c` to add metrics, tabs, daily spend chart, and top models |
+| <img src="docs/screenshots/full-mode.png" width="620" alt="cursor-tracker full mode"> |
 
 The budget bar is segmented: `█` spent, `▓` projected month-end, `░` untouched.
 It turns solid red once you pass the limit, and the pace readout turns red when
