@@ -135,3 +135,12 @@ func firstLine(s string, n int) string {
 	}
 	return strings.Join(lines, " | ")
 }
+
+func TestInitialFrame_ShowsLoading(t *testing.T) {
+	app := newTestApp(t, FetchResult{}, nil, nil, nil)
+	app.result = FetchResult{} // no fetch completed yet
+	app.warning = ""
+	if view := app.View(); !strings.Contains(view, "loading") {
+		t.Errorf("pre-fetch frame must say loading, got: %q", firstLine(view, 4))
+	}
+}

@@ -43,6 +43,8 @@ func render(a *App) string {
 		b.WriteString("\n")
 		b.WriteString(metricsLine(a))
 		b.WriteString("\n")
+	} else if a.warning == "" {
+		b.WriteString("loading usage data…\n")
 	} else {
 		b.WriteString("no usage data available\n")
 	}

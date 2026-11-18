@@ -12,9 +12,16 @@ import (
 )
 
 // post is the HTTP transport used by LiveAPI; a package var so tests stub it.
-var post = func(url string, body []byte) ([]byte, int, error) {
+// It sends the Authorization header required by DashboardService.
+var post = func(url string, body []byte, token string) ([]byte, int, error) {
 	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Post(url, "application/json", bytes.NewReader(body))
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body))
+	if err != nil {
+		return nil, 0, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+token)
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -66,7 +73,7 @@ func (a *LiveAPI) call(method string, req any, out any) error {
 	if err != nil {
 		return err
 	}
-	respBody, code, err := post(a.endpoint+method, body)
+	respBody, code, err := post(a.endpoint+method, body, a.token)
 	if err != nil {
 		return err
 	}

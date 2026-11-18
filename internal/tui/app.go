@@ -3,6 +3,7 @@ package tui
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -118,6 +119,11 @@ func (a *App) loadResult(res FetchResult) {
 			_ = a.deps.Store.UpsertDaily(res.Period.PeriodStartMs, res.Daily)
 		}
 	}
+}
+
+// SetWarnings records startup warnings shown above the dashboard.
+func (a *App) SetWarnings(warnings []string) {
+	a.warning = strings.Join(warnings, "\u00b7 ")
 }
 
 func (a *App) switchTab(n int) {

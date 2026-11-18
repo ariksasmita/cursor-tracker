@@ -23,7 +23,7 @@ func stubPost(bodyByURL map[string][]byte, statusByURL map[string]int) (reset fu
 	old := post
 	callsRec := &[]string{}
 	calls = callsRec
-	post = func(url string, body []byte) ([]byte, int, error) {
+	post = func(url string, body []byte, token string) ([]byte, int, error) {
 		*callsRec = append(*callsRec, url)
 		if code, ok := statusByURL[url]; ok {
 			return []byte(`{"error":"unauthorized"}`), code, nil
@@ -119,5 +119,25 @@ func TestName(t *testing.T) {
 	api := NewLiveAPI("https://api2.cursor.sh", "tok")
 	if api.Name() != "live" {
 		t.Errorf("Name=%q want live", api.Name())
+	}
+}
+
+func TestAuthorizationHeaderSent(t *testing.T) {
+	old := post
+	defer func() { post = old }()
+	var gotToken string
+	post = func(url string, body []byte, token string) ([]byte, int, error) {
+		gotToken = token
+		if url == "https://api2.cursor.sh"+methodPeriodUsage {
+			return loadFixture(t, "period.json"), 200, nil
+		}
+		return loadFixture(t, "daily.json"), 200, nil
+	}
+	api := NewLiveAPI("https://api2.cursor.sh", "tok-secret")
+	if _, err := api.FetchPeriodUsage(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if gotToken != "tok-secret" {
+		t.Fatalf("token not passed to transport: %q", gotToken)
 	}
 }
