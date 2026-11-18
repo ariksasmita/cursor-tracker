@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -408,4 +409,30 @@ func TestFooterNamesCompactToggle(t *testing.T) {
 	if !strings.Contains(app.View(), "compact toggle") {
 		t.Error("footer must label the key as a compact toggle")
 	}
+}
+
+func TestHeroRightAlignsPercentBlock(t *testing.T) {
+	now := time.Date(2026, 11, 18, 12, 0, 0, 0, time.Local)
+	app := newTestApp(t, goodResult(now), nil, nil, nil)
+	hero := stripStyles(heroRow(app, aggFor(app), 88))
+	lines := strings.Split(hero, "\n")
+	if len(lines) < 3 {
+		t.Fatalf("hero too short: %q", hero)
+	}
+	want := len([]rune(lines[0]))
+	for i, l := range lines {
+		if got := len([]rune(l)); got != want {
+			t.Errorf("hero line %d width %d != %d (percent block must share the right edge):\n%s", i, got, want, hero)
+		}
+	}
+	// The block must also reach the panel's right edge, not stop short.
+	const inner = 88
+	if right := len([]rune(strings.TrimRight(lines[0], " "))); right > inner || right < inner-1 {
+		t.Errorf("hero right edge at %d, want ~%d:\n%s", right, inner, hero)
+	}
+}
+
+func stripStyles(s string) string {
+	re := regexp.MustCompile("\x1b\\[[0-9;?]*[a-zA-Z]")
+	return re.ReplaceAllString(s, "")
 }

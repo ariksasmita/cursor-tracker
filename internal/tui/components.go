@@ -305,6 +305,24 @@ func heroBlock(digits, symbol string) []string {
 	return padRows(rows)
 }
 
+// rightAlignBlock pads every line on the left so the block shares one right
+// edge, which is what keeps a percentage and its caption aligned under it.
+func rightAlignBlock(block string) string {
+	lines := strings.Split(block, "\n")
+	w := 0
+	for _, l := range lines {
+		if lw := lipgloss.Width(l); lw > w {
+			w = lw
+		}
+	}
+	for i, l := range lines {
+		if pad := w - lipgloss.Width(l); pad > 0 {
+			lines[i] = strings.Repeat(" ", pad) + l
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
 // padRows makes every row of a glyph block the same width so blocks stack
 // into a clean rectangle.
 func padRows(rows []string) []string {

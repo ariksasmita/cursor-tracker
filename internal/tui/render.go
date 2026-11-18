@@ -129,13 +129,15 @@ func heroRow(a *App, ag agg.Aggregate, inner int) string {
 	if ag.RemainingCents < 0 {
 		leftLabel = stWarn.Render("OVER BUDGET " + fmtMoney(float64(-ag.RemainingCents)))
 	}
-	right := strings.Join(append(pctRows, leftLabel), "\n")
+	right := rightAlignBlock(strings.Join(append(pctRows, leftLabel), "\n"))
 
-	gap := inner - maxLineWidth(left) - maxLineWidth(right)
-	if gap < 1 {
-		gap = 1
+	leftW, rightW := maxLineWidth(left), maxLineWidth(right)
+	spacing := inner - leftW - rightW
+	if spacing < 1 {
+		spacing = 1
 	}
-	return joinColumns(left, right, gap)
+	// joinColumns pads from the left block's column, so pass its width plus gap.
+	return joinColumns(left, right, leftW+spacing)
 }
 
 // joinColumns lays two multi-line blocks side by side.
