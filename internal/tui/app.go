@@ -67,7 +67,8 @@ func New(deps Deps) *App {
 	if deps.Now == nil {
 		deps.Now = time.Now
 	}
-	a := &App{deps: deps, tab: 1} // tab 1 = Overview
+	// tab 1 = Overview; compact starts on so the first screen is the glance.
+	a := &App{deps: deps, tab: 1, compact: true}
 	a.Fetch = defaultFetch(deps)
 	return a
 }

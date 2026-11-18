@@ -108,7 +108,7 @@ func TestTabSwitch(t *testing.T) {
 	}, nil)
 	app.switchTab(3)
 	view := app.View()
-	if !strings.Contains(view, "Sessions") {
+	if !strings.Contains(view, "AGENT ACTIVITY") {
 		t.Error("sessions tab header missing")
 	}
 	if !strings.Contains(view, "agent-9") {
@@ -121,7 +121,7 @@ func TestSessionsError_TabStillRenders(t *testing.T) {
 	app := newTestApp(t, goodResult(now), nil, nil, errors.New("db locked"))
 	app.switchTab(3)
 	view := app.View()
-	if !strings.Contains(view, "Sessions") || !strings.Contains(view, "db locked") {
+	if !strings.Contains(view, "AGENT ACTIVITY") || !strings.Contains(view, "db locked") {
 		t.Errorf("sessions tab must surface error, got %q", firstLine(view, 6))
 	}
 }
@@ -186,6 +186,7 @@ func TestMetricsRowMetricsOnOneLine(t *testing.T) {
 	res.Period.PeriodStartMs = time.Date(2026, 11, 1, 0, 0, 0, 0, time.Local).UnixMilli()
 	res.Period.PeriodEndMs = time.Date(2026, 12, 1, 0, 0, 0, 0, time.Local).UnixMilli()
 	app := newTestApp(t, res, nil, nil, nil)
+	app.compact = false
 	view := app.View()
 
 	var labelLine string
@@ -309,6 +310,7 @@ func TestHeroIsTallerThanOneLine(t *testing.T) {
 func TestCompactToggleHidesMetricsAndTabs(t *testing.T) {
 	now := time.Date(2026, 11, 18, 12, 0, 0, 0, time.Local)
 	app := newTestApp(t, goodResult(now), nil, nil, nil)
+	app.compact = false
 
 	full := app.View()
 	if !strings.Contains(full, "BURN RATE") || !strings.Contains(full, "Overview") {
@@ -361,6 +363,7 @@ func TestCompactHidesOverviewBody(t *testing.T) {
 	now := time.Date(2026, 11, 18, 12, 0, 0, 0, time.Local)
 	app := newTestApp(t, goodResult(now), nil, nil, nil)
 
+	app.compact = false
 	full := app.View()
 	for _, want := range []string{"DAILY SPEND", "TOP MODELS"} {
 		if !strings.Contains(full, want) {
@@ -380,5 +383,29 @@ func TestCompactHidesOverviewBody(t *testing.T) {
 		if !strings.Contains(compact, keep) {
 			t.Errorf("compact mode must keep %q", keep)
 		}
+	}
+}
+
+func TestCompactIsDefault(t *testing.T) {
+	now := time.Date(2026, 11, 18, 12, 0, 0, 0, time.Local)
+	app := newTestApp(t, goodResult(now), nil, nil, nil)
+	if !app.compact {
+		t.Fatal("compact mode must be on by default")
+	}
+	view := app.View()
+	if strings.Contains(view, "BURN RATE") || strings.Contains(view, "DAILY SPEND") {
+		t.Error("default view must start compact")
+	}
+	app.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("c")})
+	if !strings.Contains(app.View(), "BURN RATE") {
+		t.Error("c must expand to full mode")
+	}
+}
+
+func TestFooterNamesCompactToggle(t *testing.T) {
+	now := time.Date(2026, 11, 18, 12, 0, 0, 0, time.Local)
+	app := newTestApp(t, goodResult(now), nil, nil, nil)
+	if !strings.Contains(app.View(), "compact toggle") {
+		t.Error("footer must label the key as a compact toggle")
 	}
 }

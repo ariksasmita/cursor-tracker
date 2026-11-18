@@ -357,7 +357,7 @@ func footer(a *App, inner int) string {
 	left := stMuted.Render(fmt.Sprintf("data: %s old via %s", age, src))
 	keys := stTabKey.Render(" r ") + stMuted.Render("refresh") + "   " +
 		stTabKey.Render(" 1-4 ") + stMuted.Render("tabs") + "   " +
-		stTabKey.Render(" c ") + stMuted.Render("compact") + "   " +
+		stTabKey.Render(" c ") + stMuted.Render("compact toggle") + "   " +
 		stTabKey.Render(" q ") + stMuted.Render("quit")
 	gap := inner - lipglossWidth(left) - lipglossWidth(keys)
 	if gap < 1 {
