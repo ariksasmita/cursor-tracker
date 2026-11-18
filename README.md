@@ -1,17 +1,26 @@
 # cursor-tracker
 
-Terminal dashboard for Cursor AI spend: how much of your plan limit is used,
-burn rate and projection, per-model token/cost breakdown, and OpenBot agent
-session activity. Built for the **OpenBot → `cursor-agent` (API key)** workflow,
-so it works without the Cursor desktop app running.
+Terminal dashboard for Cursor AI spend: month-to-date spend against your plan
+limit, burn rate and end-of-month projection, per-model token/cost breakdown, and
+OpenBot agent session activity. Built for the **OpenBot → `cursor-agent` (API key)**
+workflow, so it works without the Cursor desktop app running.
 
 ```
- Cursor Spend ── Oct 20–Nov 19 2026
+ Cursor Spend ── Nov 1–Dec 1 2026
 
- $12.90 / $100.00 ████░░░░░░░░░░░░░░░░░░░░░░░░░░░░  12.9%
- Burn rate: $0.72/day · Projected EOM: $21.6 · Days to limit: 121
+ $21.30 / $100.00 ██████░░░░░░░░░░░░░░░░░░░░░░░░░░  21.3%
+ Burn rate: $1.20/day · Projected EOM: $36.05 · Days to limit: 65
 
  [1] Overview  [2] Models  [3] Sessions  [4] History
+```
+
+ Models — period $21.30 · 281.22M tokens
+
+ CATEGORY                               TOKENS      SPEND  14-DAY
+ model-alpha                      6.98M      $4.75  ▁▃▁█▂▁▁▁▁▁▁▁▁▁
+ model-epsilon                        6.13M      $4.57  ▁▁▁▁▁█▁▁▁▁▁▁▁▁
+ model-delta          225.73M      $4.46  ▂▁█▃▂▁▁▁▁▁▁▁▁▁
+ model-beta                       4.78M      $3.88  ▁▁▁▁▁▁▁▁▁▁▁▁▁▁
 ```
 
 ## Install
@@ -21,6 +30,13 @@ go install github.com/sasmitai/cursor-tracker@latest
 ```
 
 Or from a checkout: `go build -o cursor-tracker .`
+
+Requires Go 1.22+. No CGO: SQLite comes from `modernc.org/sqlite`, so the binary
+is static and self-contained.
+
+Token discovery uses the macOS keychain, so on macOS it works with no setup at
+all. On Linux/Windows, set `CURSOR_TOKEN` (or point `CURSOR_STATE_DB` at a Cursor
+`state.vscdb`).
 
 ## Keys
 
@@ -37,7 +53,7 @@ Or from a checkout: `go build -o cursor-tracker .`
 | Cursor DashboardService API (`api2.cursor.sh`) | spend vs limit, per-model/day spend + tokens | primary; unofficial read-only API |
 | OpenBot `openbot.db` | agent session activity (provider/model/kind per event) | read-only, `busy_timeout` |
 | Cursor `state.vscdb` snapshot | cached dashboard data | fallback, only as fresh as the app's last run |
-| `~/.cursor-tracker/history.db` | accumulated snapshots | the tracker's own DB, grows forever |
+| `~/.cursor-tracker/history.db` | accumulated snapshots | the tracker's own DB; one row per spend change, not per refresh |
 
 If a source is unavailable the dashboard keeps working and shows a warning line.
 
