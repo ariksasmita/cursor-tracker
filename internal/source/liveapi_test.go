@@ -90,7 +90,7 @@ func TestFetchDailySpend(t *testing.T) {
 	var found bool
 	for _, r := range rows {
 		if r.Category == "model-alpha" && r.SpendCents == 330 && r.TotalTokens == 1234567 {
-			day := time.UnixMilli(1793664000000)
+			day := time.Date(2026, 11, 3, 0, 0, 0, 0, time.Local)
 			if !r.Day.Equal(day) {
 				t.Errorf("Day=%v want %v", r.Day, day)
 			}

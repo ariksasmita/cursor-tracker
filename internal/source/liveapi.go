@@ -132,13 +132,14 @@ func (a *LiveAPI) FetchDailySpend(ctx context.Context, periodStartMs, periodEndM
 	}
 	rows := make([]DailySpend, 0, len(daily.DailySpend))
 	for _, r := range daily.DailySpend {
-		dayMs, err := strconv.ParseInt(r.Day, 10, 64)
+		tokens, _ := strconv.ParseInt(r.TotalTokens, 10, 64)
+		ms, err := strconv.ParseInt(r.Day, 10, 64)
 		if err != nil {
 			return nil, fmt.Errorf("bad day %q: %w", r.Day, err)
 		}
-		tokens, _ := strconv.ParseInt(r.TotalTokens, 10, 64)
+		utc := time.UnixMilli(ms).UTC()
 		rows = append(rows, DailySpend{
-			Day:         time.UnixMilli(dayMs),
+			Day: time.Date(utc.Year(), utc.Month(), utc.Day(), 0, 0, 0, 0, time.Local),
 			Category:    r.Category,
 			SpendCents:  r.SpendCents,
 			TotalTokens: tokens,
