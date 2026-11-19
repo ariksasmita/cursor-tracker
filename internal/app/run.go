@@ -3,6 +3,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -100,6 +101,10 @@ func Run(ctx context.Context) error {
 	}
 	app := tui.New(deps)
 	app.SetWarnings(warnings)
+	// Hide the hardware cursor: bubbletea parks it mid-frame, where it
+	// renders as a stray block inside blank glyph cells.
+	fmt.Print("\x1b[?25l")
+	defer fmt.Print("\x1b[?25h")
 	_, err = tea.NewProgram(app, tea.WithAltScreen()).Run()
 	return err
 }
