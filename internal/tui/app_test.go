@@ -479,3 +479,16 @@ func TestSymmetricHorizontalPadding(t *testing.T) {
 		t.Error("no structural rule found to measure padding against")
 	}
 }
+
+func TestBigDigitsNarrowPeriod(t *testing.T) {
+	withDot := len([]rune(bigDigits("1.5")[0]))
+	withoutDot := len([]rune(bigDigits("15")[0]))
+	// A digit costs 4 columns (3 glyph + 1 gap); the period must cost fewer.
+	if diff := withDot - withoutDot; diff >= 4 || diff < 1 {
+		t.Fatalf("period column cost %d, want 1-3 (digits cost 4): %q", diff, bigDigits("1.5"))
+	}
+	// The dot still has to be visible on the baseline row.
+	if !strings.Contains(bigDigits("1.5")[2], "▄") {
+		t.Errorf("period not drawn on the baseline: %q", bigDigits("1.5"))
+	}
+}

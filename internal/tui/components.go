@@ -264,6 +264,14 @@ var bigFont = map[rune][6][3]int{
 func bigDigits(s string) []string {
 	rows := make([]strings.Builder, 3)
 	for _, ch := range s {
+		// A period is one narrow column at the baseline; a full glyph cell
+		// would leave it floating with gaps either side.
+		if ch == '.' {
+			rows[0].WriteString("  ")
+			rows[1].WriteString("  ")
+			rows[2].WriteString("▄ ")
+			continue
+		}
 		g, ok := bigFont[ch]
 		if !ok {
 			continue
