@@ -556,9 +556,17 @@ func TestMiniVerticalPadding(t *testing.T) {
 		t.Errorf("4-row window should start on the glyph, 4 lines: %q", exact)
 	}
 
-	app.height = 6 // one blank row above, content vertically centered
+	app.height = 6 // one blank row above, one below: every row canvas-painted
 	padded := strings.Split(strings.TrimRight(app.View(), "\n"), "\n")
-	if len(padded) != 5 || strings.TrimSpace(padded[0]) != "" {
-		t.Errorf("6-row window should open with one blank pad row then 4 lines: %q", padded)
+	if len(padded) != 6 {
+		t.Fatalf("mini must fill the window height, got %d lines: %q", len(padded), padded)
+	}
+	if strings.TrimSpace(padded[0]) != "" || strings.TrimSpace(padded[5]) != "" {
+		t.Errorf("rows 0 and 5 should be blank canvas: %q", padded)
+	}
+	for _, l := range padded[1:5] {
+		if strings.TrimSpace(l) == "" {
+			t.Errorf("content rows 1-4 must be the glyph/bar block: %q", padded)
+		}
 	}
 }

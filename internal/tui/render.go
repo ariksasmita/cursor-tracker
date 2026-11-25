@@ -59,8 +59,17 @@ func render(a *App) string {
 	if a.mini {
 		body := miniLines(a, inner)
 		contentH := len(strings.Split(strings.TrimRight(body, "\n"), "\n"))
-		if pad := (a.height - contentH) / 2; pad > 0 {
-			body = strings.Repeat("\n", pad) + body
+		padTop := 0
+		if a.height > contentH {
+			padTop = (a.height - contentH) / 2
+		}
+		if padTop > 0 {
+			body = strings.Repeat("\n", padTop) + body
+		}
+		// Fill the remaining rows so the canvas paints the whole window —
+		// otherwise the terminal's default background shows below the bar.
+		if fill := a.height - padTop - contentH; fill > 0 {
+			body += strings.Repeat("\n", fill)
 		}
 		return paintCanvas(body, w, pad)
 	}
