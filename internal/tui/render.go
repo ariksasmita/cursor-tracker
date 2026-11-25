@@ -54,9 +54,15 @@ func render(a *App) string {
 	const pad = 2
 	inner := w - 2*pad
 
-	// Mini mode is a standalone two-row glance: no chrome, no footer.
+	// Mini mode is a standalone glance: no chrome, no footer, vertically
+	// centred when the window is taller than the four content rows.
 	if a.mini {
-		return paintCanvas(miniLines(a, inner), w, pad)
+		body := miniLines(a, inner)
+		contentH := len(strings.Split(strings.TrimRight(body, "\n"), "\n"))
+		if pad := (a.height - contentH) / 2; pad > 0 {
+			body = strings.Repeat("\n", pad) + body
+		}
+		return paintCanvas(body, w, pad)
 	}
 
 	var b strings.Builder

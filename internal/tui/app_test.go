@@ -540,3 +540,28 @@ func TestMiniViewLayout(t *testing.T) {
 		t.Errorf("line 4 is the budget bar: %q", lines[3])
 	}
 }
+
+func TestMiniVerticalPadding(t *testing.T) {
+	now := time.Date(2026, 11, 19, 12, 0, 0, 0, time.Local)
+	res := goodResult(now)
+	res.Period.TotalSpendCents = 2262
+	res.Period.LimitCents = 10000
+	app := newTestApp(t, res, nil, nil, nil)
+	app.width = 61
+	app.mini = true
+
+	app.height = 4 // exact fit: no padding
+	exact := app.View()
+	if strings.HasPrefix(exact, "\n") {
+		t.Errorf("4-row window should have no top padding: %q", exact)
+	}
+
+	app.height = 6 // one blank row above, content vertically centered
+	padded := app.View()
+	if !strings.HasPrefix(padded, "\n") {
+		t.Errorf("6-row window should pad one row on top: %q", padded)
+	}
+	if n := len(strings.Split(strings.TrimLeft(padded, "\n"), "\n")); n != 4 {
+		t.Errorf("content below the pad must be 4 lines, got %d", n)
+	}
+}

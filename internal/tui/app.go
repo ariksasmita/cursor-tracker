@@ -106,6 +106,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch m := msg.(type) {
 	case tea.WindowSizeMsg:
 		a.width = m.Width
+		a.height = m.Height
 	case tea.KeyMsg:
 		switch m.String() {
 		case "q", "ctrl+c":
