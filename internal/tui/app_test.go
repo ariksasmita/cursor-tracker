@@ -551,17 +551,14 @@ func TestMiniVerticalPadding(t *testing.T) {
 	app.mini = true
 
 	app.height = 4 // exact fit: no padding
-	exact := app.View()
-	if strings.HasPrefix(exact, "\n") {
-		t.Errorf("4-row window should have no top padding: %q", exact)
+	exact := strings.Split(strings.TrimRight(app.View(), "\n"), "\n")
+	if len(exact) != 4 || strings.TrimSpace(exact[0]) == "" {
+		t.Errorf("4-row window should start on the glyph, 4 lines: %q", exact)
 	}
 
 	app.height = 6 // one blank row above, content vertically centered
-	padded := app.View()
-	if !strings.HasPrefix(padded, "\n") {
-		t.Errorf("6-row window should pad one row on top: %q", padded)
-	}
-	if n := len(strings.Split(strings.TrimLeft(padded, "\n"), "\n")); n != 4 {
-		t.Errorf("content below the pad must be 4 lines, got %d", n)
+	padded := strings.Split(strings.TrimRight(app.View(), "\n"), "\n")
+	if len(padded) != 5 || strings.TrimSpace(padded[0]) != "" {
+		t.Errorf("6-row window should open with one blank pad row then 4 lines: %q", padded)
 	}
 }
