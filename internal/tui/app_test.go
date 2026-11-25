@@ -524,16 +524,19 @@ func TestMiniViewLayout(t *testing.T) {
 		t.Error("mini drops the footer")
 	}
 	if !strings.Contains(out, "of $100.00") {
-		t.Errorf("mini line 1 must show spend of budget: %q", out)
+		t.Errorf("mini must show spend of budget: %q", out)
 	}
 	if !strings.Contains(out, "left $77.38") {
 		t.Errorf("left amount must sit inline with the budget: %q", out)
 	}
-	lines := strings.Split(strings.TrimRight(out, "\n"), "\n")
-	if len(lines) != 2 {
-		t.Errorf("mini renders 2 lines, got %d: %q", len(lines), out)
+	if !strings.Contains(out, "$") || !strings.Contains(out, "█▀") {
+		t.Errorf("mini shows the block-numeral spend glyph: %q", out)
 	}
-	if !strings.Contains(lines[1], "█") {
-		t.Errorf("line 2 is the budget bar: %q", lines[1])
+	lines := strings.Split(strings.TrimRight(out, "\n"), "\n")
+	if len(lines) != 4 {
+		t.Errorf("mini renders 4 lines (3 glyph rows + bar), got %d: %q", len(lines), out)
+	}
+	if !strings.Contains(lines[3], "█") {
+		t.Errorf("line 4 is the budget bar: %q", lines[3])
 	}
 }

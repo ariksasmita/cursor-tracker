@@ -46,7 +46,8 @@ func lipglossWidth(s string) int { return lipgloss.Width(s) }
 // the active tab's body, and the key hints.
 func render(a *App) string {
 	w := a.width
-	if w < minWidth {
+	// Mini mode is sized for small widget areas, so it honours narrow widths.
+	if w < minWidth && !a.mini {
 		w = defaultWidth
 	}
 	// Symmetric gutters: content occupies [pad, w-pad).
@@ -389,8 +390,9 @@ func footer(a *App, inner int) string {
 	return left + strings.Repeat(" ", gap) + keys
 }
 
-// miniLines renders the mini glance: "$X of $Y … left $Z" on one line with
-// the segmented budget bar underneath.
+// miniLines renders the mini glance: the block-numeral spend with "of $Y …
+// left $Z" inline beside it, and the segmented budget bar underneath. Four
+// rows total — sized for a 51x4 widget area.
 func miniLines(a *App, inner int) string {
 	var b strings.Builder
 	p := a.result.Period
@@ -399,15 +401,14 @@ func miniLines(a *App, inner int) string {
 		return b.String()
 	}
 	ag := agg.ComputeAggregate(a.deps.Now(), p)
-	leftTxt := stAccentBold.Render(fmtMoney(float64(p.TotalSpendCents))) +
-		stLabel.Render(" of ") +
-		stSoft.Render(fmtMoney(float64(p.LimitCents)))
-	rightTxt := stLabel.Render("left ") + stSoft.Render(fmtMoney(float64(ag.RemainingCents)))
-	gap := inner - lipglossWidth(leftTxt) - lipglossWidth(rightTxt)
-	if gap < 1 {
-		gap = 1
-	}
-	b.WriteString(leftTxt + strings.Repeat(" ", gap) + rightTxt + "\n")
+	glyph := stampColour(heroBlock(fmt.Sprintf("%.2f", float64(p.TotalSpendCents)/100), "$"), stAmount)
+	ofTxt := stLabel.Render("of ") + stSoft.Render(fmtMoney(float64(p.LimitCents)))
+	leftTxt := stLabel.Render("left ") + stSoft.Render(fmtMoney(float64(ag.RemainingCents)))
+	// The budget text rides the middle glyph row, snug against the digits.
+	mid := glyph[1]
+	b.WriteString(glyph[0] + "\n")
+	b.WriteString(mid + "   " + ofTxt + "  " + leftTxt + "\n")
+	b.WriteString(glyph[2] + "\n")
 	b.WriteString(budgetBarCells(ag, inner))
 	return b.String()
 }
