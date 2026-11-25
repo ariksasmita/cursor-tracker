@@ -492,3 +492,48 @@ func TestBigDigitsNarrowPeriod(t *testing.T) {
 		t.Errorf("period not drawn on the baseline: %q", bigDigits("1.5"))
 	}
 }
+
+func TestMiniToggleKey(t *testing.T) {
+	app := newTestApp(t, goodResult(time.Now()), nil, nil, nil)
+	if app.mini {
+		t.Fatal("mini should default off")
+	}
+	app.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("m")})
+	if !app.mini {
+		t.Error("m should enable mini")
+	}
+	app.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("m")})
+	if app.mini {
+		t.Error("m again should disable mini")
+	}
+}
+
+func TestMiniViewLayout(t *testing.T) {
+	now := time.Date(2026, 11, 19, 12, 0, 0, 0, time.Local)
+	res := goodResult(now)
+	res.Period.TotalSpendCents = 2262
+	res.Period.LimitCents = 10000
+	app := newTestApp(t, res, nil, nil, nil)
+	app.width = 100
+	app.mini = true
+	out := app.View()
+	if strings.Contains(out, "CURSOR SPEND") {
+		t.Error("mini drops the header")
+	}
+	if strings.Contains(out, "compact toggle") {
+		t.Error("mini drops the footer")
+	}
+	if !strings.Contains(out, "of $100.00") {
+		t.Errorf("mini line 1 must show spend of budget: %q", out)
+	}
+	if !strings.Contains(out, "left $77.38") {
+		t.Errorf("left amount must sit inline with the budget: %q", out)
+	}
+	lines := strings.Split(strings.TrimRight(out, "\n"), "\n")
+	if len(lines) != 2 {
+		t.Errorf("mini renders 2 lines, got %d: %q", len(lines), out)
+	}
+	if !strings.Contains(lines[1], "█") {
+		t.Errorf("line 2 is the budget bar: %q", lines[1])
+	}
+}

@@ -53,6 +53,11 @@ func render(a *App) string {
 	const pad = 2
 	inner := w - 2*pad
 
+	// Mini mode is a standalone two-row glance: no chrome, no footer.
+	if a.mini {
+		return paintCanvas(miniLines(a, inner), w, pad)
+	}
+
 	var b strings.Builder
 
 	if a.warning != "" {
@@ -190,6 +195,12 @@ func budgetBar(a *App, ag agg.Aggregate, inner int) string {
 	if cells > 60 {
 		cells = 60
 	}
+	return budgetBarCells(ag, cells)
+}
+
+// budgetBarCells paints the segmented spent/projected/untouched bar. Shared
+// by the overview and the mini glance (which uses the full width).
+func budgetBarCells(ag agg.Aggregate, cells int) string {
 	spentFrac := ag.SpendFraction
 	projFrac := ag.ProjectedFraction
 	if !ag.HasLimit {
@@ -369,12 +380,36 @@ func footer(a *App, inner int) string {
 	keys := stTabKey.Render(" r ") + stMuted.Render("refresh") + "   " +
 		stTabKey.Render(" 1-4 ") + stMuted.Render("tabs") + "   " +
 		stTabKey.Render(" c ") + stMuted.Render("compact toggle") + "   " +
+		stTabKey.Render(" m ") + stMuted.Render("mini toggle") + "   " +
 		stTabKey.Render(" q ") + stMuted.Render("quit")
 	gap := inner - lipglossWidth(left) - lipglossWidth(keys)
 	if gap < 1 {
 		gap = 1
 	}
 	return left + strings.Repeat(" ", gap) + keys
+}
+
+// miniLines renders the mini glance: "$X of $Y … left $Z" on one line with
+// the segmented budget bar underneath.
+func miniLines(a *App, inner int) string {
+	var b strings.Builder
+	p := a.result.Period
+	if p == nil {
+		b.WriteString(centerIn(stMuted.Render("loading usage data\u2026"), inner) + "\n")
+		return b.String()
+	}
+	ag := agg.ComputeAggregate(a.deps.Now(), p)
+	leftTxt := stAccentBold.Render(fmtMoney(float64(p.TotalSpendCents))) +
+		stLabel.Render(" of ") +
+		stSoft.Render(fmtMoney(float64(p.LimitCents)))
+	rightTxt := stLabel.Render("left ") + stSoft.Render(fmtMoney(float64(ag.RemainingCents)))
+	gap := inner - lipglossWidth(leftTxt) - lipglossWidth(rightTxt)
+	if gap < 1 {
+		gap = 1
+	}
+	b.WriteString(leftTxt + strings.Repeat(" ", gap) + rightTxt + "\n")
+	b.WriteString(budgetBarCells(ag, inner))
+	return b.String()
 }
 
 func rule(inner int) string {

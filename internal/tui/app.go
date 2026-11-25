@@ -60,6 +60,8 @@ type App struct {
 
 	// compact hides the metrics row and tab bar for a denser screen.
 	compact bool
+	// mini is the smallest glance: two rows, no chrome.
+	mini bool
 }
 
 // New builds the App.
@@ -113,6 +115,8 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return a, a.doFetch()
 		case "c":
 			a.compact = !a.compact
+		case "m":
+			a.mini = !a.mini
 		case "j", "down":
 			a.offset++
 		case "k", "up":
